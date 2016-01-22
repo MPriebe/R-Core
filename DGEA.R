@@ -32,7 +32,7 @@ library('reshape2')
 #############################################################################
 
 #working.dir    <- '/Users/nazrathnawaz/Dropbox/GroupPoject/RCore/CourseWorkScripts'
-working.dir     <- '/Users/sureshhewapathirana/Desktop/'
+working.dir     <- '~/Desktop/'
 accession.id    <- 'GDS5093' #  GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
 factor.type     <- 'disease.state'
 population1     <- c('Dengue Hemorrhagic Fever','Convalescent')
@@ -55,7 +55,6 @@ no.of.top.genes <- 250
 #                        GEO Input                          #
 #############################################################################
 
-
 # import data sets and process into expression data
 gse              <- getGEO(accession.id, GSEMatrix = TRUE)       # Load GEO data
 eset             <- GDS2eSet(gse, do.log2=TRUE)                  # Convert into ExpressionSet Object
@@ -66,45 +65,24 @@ pClass           <- pData(eset)[factor.type]
 samples          <- rownames(pClass)
 
 
-# sample IDs for each population
-index.pop1  <- pData(eset)[factor.type][,] %in% population1
-index.pop2  <- pData(eset)[factor.type][,] %in% population2
-
-count.pop1 <- which(index.pop1 == TRUE)
-count.pop2 <- which(index.pop2 == TRUE)
-
-samples.pop1 <- samples[index.pop1]
-samples.pop2 <- samples[index.pop2]
-
-# Create a new Phenotype Class
-group1 <- rep('Group1', length(count.pop1) ) 
-names(group1) <- samples.pop1
-
-group2 <- rep('Group2', length(count.pop2) ) 
-names(group2) <- samples.pop2
-
-newPClass <- c(group1, group2)
-as.factor(newPClass)
-
 # Create a data frame with the factors
-expression.info <- data.frame(pClass, Sample = samples, row.names = samples)
+expression.info  <- data.frame(pClass, Sample = samples, row.names = samples)
+colnames(pClass) <- 'factor.type'
 
-expression.info<- within(expression.info, {
-    Population = ifelse ( Sample %in% samples.pop1,
-                          pop.colour1, # if true
-                          ifelse( Sample %in% samples.pop2, pop.colour2, '#000000') ) # if false
+expression.info <- within(expression.info, {
+  Population = ifelse (factor.type %in% population1,
+                       'Group1', # if true
+                       ifelse( factor.type %in% population2, 'Group2', NA) ) # if false
+  population.colour = ifelse (factor.type %in% population1,
+                       pop.colour1, # if true
+                       ifelse( factor.type %in% population2, pop.colour2, '#000000') ) # if false
 })
 
-
-head(melt(X))
 data <- within(melt(X), {
-    Factors = expression.info[Var2, factor.type]
+    Factors = expression.info[Var2, 'factor.type']
 })
 
-
-str(data)
-
-boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Factors)) + theme(axis.text.x = element_text(angle = 90, hjust = 1, colour = as.vector(expression.info$Population)), legend.position = 'bottom')+ labs(x = 'Samples', y = 'Expression Levels')  
+boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Factors)) + theme(axis.text.x = element_text(angle = 90, hjust = 1, colour = as.vector(expression.info$population.colour)), legend.position = 'bottom')+ labs(x = 'Samples', y = 'Expression Levels')
 
 boxplot
 
@@ -127,18 +105,6 @@ ggsave(filename, plot=boxplot, width = 8, height = 4)
  #arr   <- levels(pClass)
 # phase <- c()
 
-# to be replaced ##
-#  for(i in seq(1,length(arr)-1))
-#  {
-#      for(j in seq(i+1,length(arr)))
-#      {
-#          a <- paste("pClass", arr[i],sep="")
-#          b <- paste("pClass", arr[j],sep="")
-#          result <- paste(a, b, sep="-")
-#          phase <- append(phase, result)
-#      }
-#  }
-
 
 #### Using the limma package ####
 
@@ -151,22 +117,20 @@ fit     <- lmFit(X, design)
 contrasts <- makeContrasts(contrasts="newPClassGroup1-newPClassGroup2",
                            levels = design)
 
-fit <- contrasts.fit(fit, contrasts)  
+fit <- contrasts.fit(fit, contrasts)
 
 # empirical Bayes smoothing to standard errors
 fit <- eBayes(fit)
 
-toptable <- topTable(fit, sort.by="p", number=no.of.top.genes)
 
+# Sort.by shoudl be variable - 'p' or 'LogFC'
+toptable <- topTable(fit, sort.by="p", number=no.of.top.genes, genelist = geneNames)
 
+toptable['gene'] <- geneNames[rownames(toptable)]
 
-## sort by p-values (to be reviewed) ##
-#toptable <- toptable(fit, sort.by='logFC', number=250, genelist = geneNames)
-#toptable['gene'] <- geneNames[rownames(toptable)]
-
-# Create Sub Data
-#X.toptable <- X[rownames(toptable),]
-#rownames(X.toptable) <- geneNames[rownames(toptable)]
+#Create Sub Data
+X.toptable <- X[rownames(toptable),]
+rownames(X.toptable) <- geneNames[rownames(toptable)]
 
 ######
 # Draw Graphs for DGEA
@@ -197,5 +161,4 @@ dev.off()
 # store Top20 genes as a .csv file in the working directory
 filename <- paste(working.dir,"TopGenes.csv",sep = "")
 write.csv(toptable[1:no.of.top.genes,], file = filename)
-
 
