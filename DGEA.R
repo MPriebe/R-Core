@@ -1,6 +1,6 @@
 #!/usr/bin/Rsript
 # ---------------------------------------------------------
-# Filename      : combined_DGEA.R
+# Filename      : DGEA.R
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anissa
 # Description   : Differential Gene Expression Analysis
 # ---------------------------------------------------------
@@ -27,13 +27,33 @@ library('plyr')
 library('RColorBrewer')
 library('reshape2')
 
-# Command Line Arguments
-working.dir   <- '/Users/nazrathnawaz/Dropbox/GroupPoject/RCore/CourseWorkScripts'
-accession.id  <- 'GDS5093' #  GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
-factor_type   <- 'disease.state'
+#############################################################################
+#                        Command Line Arguments                          #
+#############################################################################
+
+#working.dir    <- '/Users/nazrathnawaz/Dropbox/GroupPoject/RCore/CourseWorkScripts'
+working.dir     <- '/Users/sureshhewapathirana/Desktop/'
+accession.id    <- 'GDS5093' #  GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
+factor.type     <- 'disease.state'
+population1     <- c('Dengue Hemorrhagic Fever','Convalescent')
+population2     <- c('healthy control')
+pop.name1       <- "Dengue"
+pop.name2       <- "Normal"
+pop.colour1     <- "#b71c1c" # Red
+pop.colour2     <- "#0d47a1" # Blue
+no.of.top.genes <- 250
+
+#############################################################################
+#                        Testing Variables                         #
+#############################################################################
+
 #factor_type  <- 'genotype/variation'
 #factor_type  <- 'development.stage'
 #factor_type  <- 'infection'
+
+#############################################################################
+#                        GEO Input                          #
+#############################################################################
 
 
 # import data sets and process into expression data
@@ -42,19 +62,51 @@ eset             <- GDS2eSet(gse, do.log2=TRUE)                  # Convert into 
 X                <- exprs(eset)                                  # Get Expression Data
 geneNames        <- as.character(gse@dataTable@table$IDENTIFIER) # Store gene names
 names(geneNames) <- rownames(X)
+pClass           <- pData(eset)[factor.type]
+samples          <- rownames(pClass)
+
+
+# sample IDs for each population
+index.pop1  <- pData(eset)[factor.type][,] %in% population1
+index.pop2  <- pData(eset)[factor.type][,] %in% population2
+
+count.pop1 <- which(index.pop1 == TRUE)
+count.pop2 <- which(index.pop2 == TRUE)
+
+samples.pop1 <- samples[index.pop1]
+samples.pop2 <- samples[index.pop2]
+
+# Create a new Phenotype Class
+group1 <- rep('Group1', length(count.pop1) ) 
+names(group1) <- samples.pop1
+
+group2 <- rep('Group2', length(count.pop2) ) 
+names(group2) <- samples.pop2
+
+newPClass <- c(group1, group2)
+as.factor(newPClass)
 
 # Create a data frame with the factors
-expression.info <- data.frame(pData(eset)[factor_type],
-                              row.names     = sampleNames(eset))
+expression.info <- data.frame(pClass, Sample = samples, row.names = samples)
 
-data <- within(melt(X), {
-    Factors = expression.info[Var2, factor_type]
+expression.info<- within(expression.info, {
+    Population = ifelse ( Sample %in% samples.pop1,
+                          pop.colour1, # if true
+                          ifelse( Sample %in% samples.pop2, pop.colour2, '#000000') ) # if false
 })
 
-# BoxPlot with colours based on the factors given
-boxplot <- ggplot(data) + labs(x = 'Sample', y = 'Expression Levels') +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = 'bottom'
-    ) + geom_boxplot(aes(x = Var2, y = value, colour = Factors))
+
+head(melt(X))
+data <- within(melt(X), {
+    Factors = expression.info[Var2, factor.type]
+})
+
+
+str(data)
+
+boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Factors)) + theme(axis.text.x = element_text(angle = 90, hjust = 1, colour = as.vector(expression.info$Population)), legend.position = 'bottom')+ labs(x = 'Samples', y = 'Expression Levels')  
+
+boxplot
 
 # store Boxplot as an .svg file in the working directory
 filename <- paste(working.dir,"boxplot.svg",sep = "")
@@ -66,37 +118,37 @@ ggsave(filename, plot=boxplot, width = 8, height = 4)
 ######
 #which((pData(eset) == levels(pData(eset))[1]) == TRUE)
 
-pClass        <- as.factor(pData(eset)[,factor_type])
-names(pClass) <- sampleNames(eset)
+#pClass        <- as.factor(pData(eset)[,factor_type])
+#names(pClass) <- sampleNames(eset)
 
 # remove white spaces in factors and rename
-levels(pClass) <-unlist(lapply(levels(pClass), function (x) gsub(" ", "", x, fixed = TRUE)))
+#levels(pClass) <-unlist(lapply(levels(pClass), function (x) gsub(" ", "", x, fixed = TRUE)))
 
-arr   <- levels(pClass)
-phase <- c()
+ #arr   <- levels(pClass)
+# phase <- c()
 
-## to be replaced ##
-for(i in seq(1,length(arr)-1))
-{
-    for(j in seq(i+1,length(arr)))
-    {
-        a <- paste("pClass", arr[i],sep="")
-        b <- paste("pClass", arr[j],sep="")
-        result <- paste(a, b, sep="-")
-        phase <- append(phase, result)
-    }
-}
+# to be replaced ##
+#  for(i in seq(1,length(arr)-1))
+#  {
+#      for(j in seq(i+1,length(arr)))
+#      {
+#          a <- paste("pClass", arr[i],sep="")
+#          b <- paste("pClass", arr[j],sep="")
+#          result <- paste(a, b, sep="-")
+#          phase <- append(phase, result)
+#      }
+#  }
 
 
 #### Using the limma package ####
 
-design  <- model.matrix(~0+pClass)
+design  <- model.matrix(~0+newPClass)
 
 # plots linear model for each gene and estimate fold changes and standard errors
 fit     <- lmFit(X, design)
 
 # set contrasts for all classes
-contrasts <- makeContrasts(contrasts=phase,
+contrasts <- makeContrasts(contrasts="newPClassGroup1-newPClassGroup2",
                            levels = design)
 
 fit <- contrasts.fit(fit, contrasts)  
@@ -104,13 +156,17 @@ fit <- contrasts.fit(fit, contrasts)
 # empirical Bayes smoothing to standard errors
 fit <- eBayes(fit)
 
-## sort by p-values (to be reviewed) ##
-toptable <- toptable(fit, sort.by='logFC', number=250, genelist = geneNames)
-toptable['gene'] <- geneNames[rownames(toptable)]
+toptable <- topTable(fit, sort.by="p", number=no.of.top.genes)
 
-# Create Sub Data
-X.toptable <- X[rownames(toptable),]
-rownames(X.toptable) <- geneNames[rownames(toptable)]
+
+
+## sort by p-values (to be reviewed) ##
+#toptable <- toptable(fit, sort.by='logFC', number=250, genelist = geneNames)
+#toptable['gene'] <- geneNames[rownames(toptable)]
+
+# Create Sub Data
+#X.toptable <- X[rownames(toptable),]
+#rownames(X.toptable) <- geneNames[rownames(toptable)]
 
 ######
 # Draw Graphs for DGEA
@@ -133,12 +189,13 @@ dev.off()
 # store Volcano plot as an .svg file in the working directory
 filename <- paste(working.dir,"Volcano.svg",sep = "")
 CairoSVG(file = filename)
-volcanoplot(fit, coef=1, highlight=20, names=geneNames, col='steelblue', xlab='Log Fold Change',
-            ylab='Log Odds', pch=16, cex=0.5)
+with(toptable, plot(logFC, -log10(P.Value), pch=20, main="Volcano plot", xlim=c(-1,1)))
+#volcanoplot(fit, coef=1, highlight=20, names=geneNames, col='steelblue', xlab='Log Fold Change',
+#            ylab='Log Odds', pch=16, cex=0.5)
 dev.off()
 
 # store Top20 genes as a .csv file in the working directory
 filename <- paste(working.dir,"TopGenes.csv",sep = "")
-write.csv(toptable[1:20,], file = filename)
+write.csv(toptable[1:no.of.top.genes,], file = filename)
 
 
