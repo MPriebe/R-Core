@@ -1,17 +1,8 @@
 
-# Loop which takes accession numbers entered and carries out DGEA
-while read p; do
+Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005
 
- # create a directory with the Results
- mkdir GEO_${p}
- 
- # make a name file with the accession id
- echo $p > GEO_${p}.txt
 
- # run Rscript to carry out Differential Gene Expression Analysis
- 	  Rscript DGEA.R GEO_${p}.txt
 
-done < accession.id.txt
 
 
 
