@@ -5,12 +5,20 @@
 # Description   : Differential Gene Expression Analysis
 # ---------------------------------------------------------
 
+#### TO DO LIST ####
+# CLI
+# PCA, volcano json
+# SVG and PNG
+# .Rdata
+####
+
 #############################################################################
 #       Load necessary dependancies, if not previously installed            #
 #############################################################################
 
 # source('http://bioconductor.org/biocLite.R')
 # biocLite('GEOquery')
+# install.packages("argparser")
 # install.packages('Cairo')
 # install.packages('dendextend')
 # install.packages('GEOquery')
@@ -26,6 +34,7 @@
 #                        Gene Expression  Analysis                          #
 #############################################################################
 
+library('argparser')
 library('Cairo')
 library('dendextend')
 library('GEOquery')
@@ -38,14 +47,28 @@ library('RColorBrewer')
 library('reshape2')
 
 #############################################################################
-#                        Command Line Arguments                          #
+#                        Command Line Arguments                             #
 #############################################################################
 
-output.dir     <- "/Users/sureshhewapathirana/Desktop/"
+output.dir     <- "/Users/nazrathnawaz/Desktop/"
+
+# args <- commandArgs(trailingOnly = TRUE)
+
+# add_argument(parser, arg, help, default = NULL, type = NULL, nargs = NULL,
+#      flag = NULL, short = NULL)
+
+accession.id <- arg_parser("Your input GEO accession id")
+
+accession.id <- add_argument(accession.id, "accession id", help="input file")
+accession.id
+
+argv <- parse_args(accession.id)
+
+argv$accession.id
 
 # --------- Geo DataSet Input ------------
 
-accession.id    <- 'GDS5093' #  GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
+# accession.id    <-  # 'GDS5093' # GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
 factor.type     <- 'disease.state'
 population1     <- c('Dengue Hemorrhagic Fever','Convalescent')
 population2     <- c('healthy control')
@@ -62,7 +85,7 @@ threshold.value <- 0.005 # 0.05/no.of.top.genes -  Bonferroni cut-off
 
 
 #############################################################################
-#                        Testing Variables                         #
+#                        Testing Variables                         			#
 #############################################################################
 
 #factor_type  <- 'genotype/variation'
@@ -70,22 +93,22 @@ threshold.value <- 0.005 # 0.05/no.of.top.genes -  Bonferroni cut-off
 #factor_type  <- 'infection'
 
 #############################################################################
-#                        GEO Input                          #
+#                        GEO Input                      				    #
 #############################################################################
 
 # import data sets and process into expression data
-gse              <- getGEO(accession.id, GSEMatrix = TRUE)       # Load GEO data
-met              <- Meta(gse)
-eset             <- GDS2eSet(gse, do.log2=TRUE)                  # Convert into ExpressionSet Object
-X                <- exprs(eset)                                  # Get Expression Data
+gse               <- getGEO(argv[1], GSEMatrix = TRUE)       # Load GEO data
+met               <- Meta(gse)
+eset              <- GDS2eSet(gse, do.log2=TRUE)                  # Convert into ExpressionSet Object
+X                 <- exprs(eset)                                  # Get Expression Data
 gene.names        <- as.character(gse@dataTable@table$IDENTIFIER) # Store gene names
 names(gene.names) <- rownames(X)
-pClass           <- pData(eset)[factor.type]
-colnames(pClass) <- 'factor.type'
-samples          <- rownames(pClass)
+pClass            <- pData(eset)[factor.type]
+colnames(pClass)  <- 'factor.type'
+samples           <- rownames(pClass)
 
 #############################################################################
-#                        Two Population Preparation                          #
+#                        Two Population Preparation                         #
 #############################################################################
 
 # Create a data frame with the factors
@@ -117,7 +140,7 @@ newPClass           <- expression.info$population
 names(newPClass)    <- expression.info$Sample
 
 #############################################################################
-#                        Meta Data Access                         #
+#                        Meta Data Access                 			        #
 #############################################################################
 
 # Obtain a vector of the possible factors
@@ -185,7 +208,7 @@ filtered.toptable <- function(toptable, gene.names){
     return(X.toptable)
 }
 #############################################################################
-#                        Graphical Representation                          #
+#                        Graphical Representation                           #
 #############################################################################
 
 samples.boxplot <- function(){
@@ -314,7 +337,7 @@ clustering <- function(dist.method = "euclidean", clust.method = "average"){
 #      cex.lab=0.7, cex.axis = 0.7)
 
 #############################################################################
-#                        Function Calling                          #
+#                        Function Calling             		                #
 #############################################################################
 
 exportJson <- generate.geo.summary.json(pData(eset), met)
