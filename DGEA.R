@@ -242,6 +242,15 @@ volcanoplot2 <- function(toptable,fold.change, t = 0.05/length(gene.names)){
     ggsave(filename, plot=vol, height = 6, width = 6)
 }
 
+get.vol.data <- function(toptable,fold.change, t = 0.05/length(gene.names)){
+    
+    vol <- data.frame(cbind(round(toptable$logFC,3), round(-log10(toptable$P.Value),3)))
+   # colnames(vol) <- c("logFC", "pVal")
+    vol.list <- list(logFC = round(toptable$logFC,3),
+                     pVal  = round(-log10(toptable$P.Value),3))F
+    return(vol.list)
+}
+
 top.genes <- function(toptable, n){
     # store Top20 genes as a .csv file in the working directory
     filename <- paste(output.dir,"TopGenes.csv",sep = "")
@@ -259,59 +268,32 @@ clustering <- function(dist.method = "euclidean", clust.method = "average"){
 }
 
 # ------- Principal Component Analysis ----------
-# 
-# Xpca <- prcomp(t(X), scale= TRUE)
-# attributes(Xpca)
-# 
-# s <- summary(Xpca)
-# str(s)
-# 
-# # Explained Variance
-# expVar <- s$importance[2,] * 100   # convert to %
-# expVar
-# 
-# barplot(expVar, xlab = "Principal Components", ylab = "Explained Variance (%)",
-#         col ="steelblue")
-# 
-# # Cumulative Variance
-# cumVar <- s$importance[3,] * 100
-# 
-# plot(cumVar, type="o" ,col="black", pch=21, bg="blue", cex=0.8, ylab="Cumulative Variance",
-#      xlab="Principal Components")
-# 
-# Xscores <- Xpca$x
-# 
-# Xloadings <- Xpca$rotation
-# 
-# 
-# pValues <- c()
-# for (i in 1:nrow(X)) {
-#     res <- t.test(X[i,controlIndex],X[i,virusIndex])
-#     pValues <- c(pValues, res$p.value)
-# }
-# names(pValues) <- geneNames
-# topGenesIndx <- order(pValues)[1:50]
-# topGeneNames <- geneNames[topGenesIndx]
-# topGeneNames
-# 
-# Xpca <- prcomp(t(X[topGenesIndx, ]), scale= TRUE)
-# # Explained Variance
-# expVar <- s$importance[2,] * 100
-# expVar
-# 
-# barplot(expVar, xlab = "Principal Components", ylab = "Explained Variance (%)",
-#         col ="steelblue")
-# 
-# # Cumulative Variance
-# cumVar <- s$importance[3,] * 100
-# cumVar
-# 
-# plot(cumVar, type="o" ,col="black", pch=21, bg="blue", cex=0.8, ylab="Cumulative Variance",
-#      xlab="Principal Components")
-# 
-# Xscores <- Xpca$x
-# plot(Xscores, xlab="PC1", ylab="PC2", pch=21, bg=colour, cex=0.7,
-#      cex.lab=0.7, cex.axis = 0.7)
+
+get.pc.data <- function(X){
+    Xpca <- prcomp(t(X), scale= TRUE)
+    s <- summary(Xpca)
+    
+    
+    
+    # Individual contribution of each princle component
+    expVar <- s$importance[2,] * 100   # convert to %
+    
+    # Cumulative Variance
+    cumVar <- s$importance[3,] * 100
+    
+    pcnames <-names(expVar)
+    
+    names(expVar) <- NULL
+    names(cumVar) <- NULL
+    
+    results <- list(pcnames = pcnames,
+                    expVar = expVar,
+                    cumVar = cumVar)
+    
+    return(results)
+}
+
+
 
 #############################################################################
 #                        Function Calling                          #
@@ -331,3 +313,10 @@ volcanoplot1(toptable)
 volcanoplot2(toptable.all,fold.change)
 top.genes(toptable,no.of.top.genes)
 clustering()
+
+filename <- paste(output.dir,"data.json",sep = "")
+pcdata <- get.pc.data(X)
+volcanoplot.data <- get.vol.data(toptable,fold.change)
+json.list <- list(pc = pcdata, vol = volcanoplot.data)
+write(toJSON(json.list), filename)
+
