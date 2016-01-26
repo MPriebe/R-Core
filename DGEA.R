@@ -6,11 +6,13 @@
 # ---------------------------------------------------------
 
 #### TO DO LIST ####
-# CLI
-# PCA, volcano json
 # SVG and PNG
 # .Rdata
 ####
+
+#### TO RUN IN CLI ####
+# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005
+###
 
 #############################################################################
 #       Load necessary dependancies, if not previously installed            #
@@ -52,36 +54,36 @@ library('reshape2')
 
 output.dir     <- "/Users/nazrathnawaz/Desktop/"
 
-# args <- commandArgs(trailingOnly = TRUE)
+parser <- arg_parser("this is a test 1")
+parser <- add_argument(parser, "--accession", help="input file")
+parser <- add_argument(parser, "--factor", help="input file")
+parser <- add_argument(parser, "--popA", nargs='+', help="input file")
+parser <- add_argument(parser, "--popB", nargs='+', help="input file")
+parser <- add_argument(parser, "--popname1", help="input file")
+parser <- add_argument(parser, "--popname2", help="input file")
+parser <- add_argument(parser, "--topgenecount", help="input file")
+parser <- add_argument(parser, "--foldchange", help="input file")
+parser <- add_argument(parser, "--thresholdvalue", help="input file")
 
-# add_argument(parser, arg, help, default = NULL, type = NULL, nargs = NULL,
-#      flag = NULL, short = NULL)
+argv <- parse_args(parser)
 
-accession.id <- arg_parser("Your input GEO accession id")
-
-accession.id <- add_argument(accession.id, "accession id", help="input file")
-accession.id
-
-argv <- parse_args(accession.id)
-
-argv$accession.id
 
 # --------- Geo DataSet Input ------------
-
-# accession.id    <-  # 'GDS5093' # GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
-factor.type     <- 'disease.state'
-population1     <- c('Dengue Hemorrhagic Fever','Convalescent')
-population2     <- c('healthy control')
-pop.name1       <- "Dengue"
-pop.name2       <- "Normal"
+accession.id    <- argv$accession # 'GDS5093' # GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
+factor.type     <- argv$factor # 'disease.state'
+population1     <- unlist(strsplit(argv$popA, ",")) # c('Dengue Hemorrhagic Fever','Convalescent')
+population2     <- unlist(strsplit(argv$popB, ",")) # c('healthy control')
+pop.name1       <- argv$popname1 # "Dengue"
+pop.name2       <- argv$popname2 # "Normal"
 pop.colour1     <- "#b71c1c" # Red  
 pop.colour2     <- "#0d47a1" # Blue 
 
+
 # --------- Volcano Plot ------------
-no.of.top.genes <- 250 
-toptable.sortby <- "p" # or "logFC"
-fold.change <- 0.3
-threshold.value <- 0.005 # 0.05/no.of.top.genes -  Bonferroni cut-off
+no.of.top.genes <- as.numeric(argv$topgenecount) # 250
+toptable.sortby <- "p"
+fold.change <- as.numeric(argv$foldchange) # 0.3
+threshold.value <- as.numeric(argv$thresholdvalue)	 # 0.005 # 0.05/no.of.top.genes -  Bonferroni cut-off
 
 
 #############################################################################
@@ -97,7 +99,7 @@ threshold.value <- 0.005 # 0.05/no.of.top.genes -  Bonferroni cut-off
 #############################################################################
 
 # import data sets and process into expression data
-gse               <- getGEO(argv[1], GSEMatrix = TRUE)       # Load GEO data
+gse               <- getGEO(accession.id, GSEMatrix = TRUE)       # Load GEO data
 met               <- Meta(gse)
 eset              <- GDS2eSet(gse, do.log2=TRUE)                  # Convert into ExpressionSet Object
 X                 <- exprs(eset)                                  # Get Expression Data
@@ -114,6 +116,7 @@ samples           <- rownames(pClass)
 # Create a data frame with the factors
 expression.info  <- data.frame(pClass, Sample = samples, row.names = samples)
 
+
 # Introduce two columns to expression.info - 
 #   1. population - new two groups/populations
 #   2. population.colour - colour for two new two groups/populations
@@ -124,12 +127,14 @@ expression.info <- within(expression.info, {
                                 ifelse( factor.type %in% population2, pop.colour2, '#000000') ) # if false
 })
 
+
 # Convert to a factor
 expression.info$population <- as.factor(expression.info$population)
 
 data <- within(melt(X), {
     phenotypes = expression.info[Var2, 'factor.type']
 })
+
 
 # Remove samples that are not belongs to two populations
 expression.info <- expression.info[complete.cases(expression.info),]
@@ -138,6 +143,8 @@ X <- X[,(colnames(X) %in% rownames(expression.info))]
 # Created a new Phenotype class
 newPClass           <- expression.info$population
 names(newPClass)    <- expression.info$Sample
+
+
 
 #############################################################################
 #                        Meta Data Access                 			        #
@@ -270,7 +277,7 @@ get.vol.data <- function(toptable,fold.change, t = 0.05/length(gene.names)){
     vol <- data.frame(cbind(round(toptable$logFC,3), round(-log10(toptable$P.Value),3)))
    # colnames(vol) <- c("logFC", "pVal")
     vol.list <- list(logFC = round(toptable$logFC,3),
-                     pVal  = round(-log10(toptable$P.Value),3))F
+                     pVal  = round(-log10(toptable$P.Value),3))
     return(vol.list)
 }
 
