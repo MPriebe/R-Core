@@ -174,6 +174,7 @@ find.toptable <- function(X, newPClass, toptable.sortby, no.of.top.genes, gene.n
     return(toptable)
 }
 
+
 filtered.toptable <- function(toptable, gene.names){
     toptable['gene'] <- gene.names[rownames(toptable)]
     
@@ -220,22 +221,22 @@ volcanoplot1 <- function(toptable){
     # store Volcano plot as an .svg file in the working directory
     filename <- paste(output.dir,"Volcano.svg",sep = "")
     CairoSVG(file = filename)
-    with(toptable, plot(logFC, -log10(P.Value), pch=20, main="Volcano plot", xlim = c(-1.25, 1.25),ylim = c(0, 27)))
+    with(toptable, plot(logFC, -log10(P.Value), pch=20, main="Volcano plot", xlim = c(-max(toptable$logFC)-0.1, max(toptable$logFC)+0.1),ylim = c(0, max(-log10(toptable$P.Value))+0.5)))
     #volcanoplot(fit, coef=1, highlight=20, names=gene.names, col='steelblue', xlab='Log Fold Change',
     #            ylab='Log Odds', pch=16, cex=0.5)
     dev.off()
 }
 
-#Bonferroni cut-off
 
-volcanoplot2 <- function(toptable,fold.change, t = 0.05/no.of.top.genes){
+                                                #Bonferroni cut-off    
+volcanoplot2 <- function(toptable,fold.change, t = 0.05/length(gene.names)){
     
-    ##Highlight genes that have an absolute fold change > 2 and a p-value < Bonferroni cut-off
+    # Highlight genes that have an absolute fold change > 2 and a p-value < Bonferroni cut-off
     toptable$threshold = as.factor(abs(toptable$logFC) > fold.change & toptable$P.Value < t)
     
-    ##Construct the plot object
+    # Construct the plot object
     vol = ggplot(data=toptable, aes(x=toptable$logFC, y=-log10(toptable$P.Value), colour=threshold)) +
-        geom_point(alpha=0.4, size=1.75)  + xlim(c(-1.25, 1.25)) + ylim(c(0, 27)) +
+        geom_point(alpha=0.4, size=1.75)  + xlim(c(-max(toptable$logFC)-0.1, max(toptable$logFC)+0.1)) + ylim(c(0, max(-log10(toptable$P.Value))+0.5)) +
         xlab("log2 fold change") + ylab("-log10 p-value")
     filename <- paste(output.dir,"Volcanoplot2.svg",sep = "")
     ggsave(filename, plot=vol, height = 6, width = 6)
@@ -253,7 +254,7 @@ clustering <- function(dist.method = "euclidean", clust.method = "average"){
     labels_colors(dend) <- expression.info$population.colour[order.dendrogram(dend)]
     filename <- paste(output.dir,"Cluster.svg",sep = "")
     CairoSVG(file = filename)
-    plot(dend)
+    plot(dend, main = "Cluster Dendrogram", xlab = "Samples")
     dev.off()
 }
 
@@ -316,16 +317,17 @@ clustering <- function(dist.method = "euclidean", clust.method = "average"){
 #                        Function Calling                          #
 #############################################################################
 
-exportJson <- generate.geo.summary.json(pDat, met)
+exportJson <- generate.geo.summary.json(pData(eset), met)
 write(exportJson, 'factors.json')
 
-no.of.top.genes<-54715
+no.of.top.genes<-250
 samples.boxplot()
 toptable <- find.toptable(X, newPClass, toptable.sortby, no.of.top.genes, gene.names)
 X.toptable <- filtered.toptable(toptable, gene.names)
 heatmap(X.toptable,expression.info$population.colour)
 adj.p.val.histogram(toptable)
+toptable.all <- find.toptable(X, newPClass, toptable.sortby, length(gene.names) , gene.names)
 volcanoplot1(toptable)
-volcanoplot2(toptable,fold.change)
+volcanoplot2(toptable.all,fold.change)
 top.genes(toptable,no.of.top.genes)
 clustering()
