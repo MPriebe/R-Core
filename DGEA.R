@@ -274,16 +274,16 @@ adj.p.val.histogram <- function(toptable){
     dev.off()
 }
 
-# volcano plot
-volcanoplot1 <- function(toptable){
-    # store Volcano plot as an .png file in the working directory
-    filename <- paste(output.dir,"volcano.png",sep = "")
-    CairoPNG(file = filename, width = 600, height = 600)
-    with(toptable, plot(logFC, -log10(P.Value), pch=20, main="Volcano plot", xlim = c(-max(toptable$logFC)-0.1, max(toptable$logFC)+0.1),ylim = c(0, max(-log10(toptable$P.Value))+0.5)))
-    #volcanoplot(fit, coef=1, highlight=20, names=gene.names, col='steelblue', xlab='Log Fold Change',
-    #            ylab='Log Odds', pch=16, cex=0.5)
-    dev.off()
-}
+# volcano plot (testing)
+# volcanoplot1 <- function(toptable){
+#     # store Volcano plot as an .png file in the working directory
+#     filename <- paste(output.dir,"volcano.png",sep = "")
+#     CairoPNG(file = filename, width = 600, height = 600)
+#     with(toptable, plot(logFC, -log10(P.Value), pch=20, main="Volcano plot", xlim = c(-max(toptable$logFC)-0.1, max(toptable$logFC)+0.1),ylim = c(0, max(-log10(toptable$P.Value))+0.5)))
+#     #volcanoplot(fit, coef=1, highlight=20, names=gene.names, col='steelblue', xlab='Log Fold Change',
+#     #            ylab='Log Odds', pch=16, cex=0.5)
+#     dev.off()
+# }
 
 
                                                 #Bonferroni cut-off    
