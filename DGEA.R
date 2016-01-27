@@ -5,12 +5,22 @@
 # Description   : Differential Gene Expression Analysis
 # ---------------------------------------------------------
 
+#### TO DO LIST ####
+# SVG and PNG
+# .Rdata
+####
+
+#### TO RUN IN CLI ####
+# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005
+###
+
 #############################################################################
 #       Load necessary dependancies, if not previously installed            #
 #############################################################################
 
 # source('http://bioconductor.org/biocLite.R')
 # biocLite('GEOquery')
+# install.packages("argparser")
 # install.packages('Cairo')
 # install.packages('dendextend')
 # install.packages('GEOquery')
@@ -26,6 +36,7 @@
 #                        Gene Expression  Analysis                          #
 #############################################################################
 
+library('argparser')
 library('Cairo')
 library('dendextend')
 library('GEOquery')
@@ -38,31 +49,45 @@ library('RColorBrewer')
 library('reshape2')
 
 #############################################################################
-#                        Command Line Arguments                          #
+#                        Command Line Arguments                             #
 #############################################################################
 
-output.dir     <- "/Users/sureshhewapathirana/Desktop/"
+output.dir     <- "/Users/nazrathnawaz/Desktop/"
+
+parser <- arg_parser("this is a test 1")
+parser <- add_argument(parser, "--accession", help="input file")
+parser <- add_argument(parser, "--factor", help="input file")
+parser <- add_argument(parser, "--popA", nargs='+', help="input file")
+parser <- add_argument(parser, "--popB", nargs='+', help="input file")
+parser <- add_argument(parser, "--popname1", help="input file")
+parser <- add_argument(parser, "--popname2", help="input file")
+parser <- add_argument(parser, "--topgenecount", help="input file")
+parser <- add_argument(parser, "--foldchange", help="input file")
+parser <- add_argument(parser, "--thresholdvalue", help="input file")
+
+argv <- parse_args(parser)
+
 
 # --------- Geo DataSet Input ------------
-
-accession.id    <- 'GDS5093' #  GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
-factor.type     <- 'disease.state'
-population1     <- c('Dengue Hemorrhagic Fever','Convalescent')
-population2     <- c('healthy control')
-pop.name1       <- "Dengue"
-pop.name2       <- "Normal"
+accession.id    <- argv$accession # 'GDS5093' # GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
+factor.type     <- argv$factor # 'disease.state'
+population1     <- unlist(strsplit(argv$popA, ",")) # c('Dengue Hemorrhagic Fever','Convalescent')
+population2     <- unlist(strsplit(argv$popB, ",")) # c('healthy control')
+pop.name1       <- argv$popname1 # "Dengue"
+pop.name2       <- argv$popname2 # "Normal"
 pop.colour1     <- "#b71c1c" # Red  
 pop.colour2     <- "#0d47a1" # Blue 
 
+
 # --------- Volcano Plot ------------
-no.of.top.genes <- 250 
-toptable.sortby <- "p" # or "logFC"
-fold.change <- 0.3
-threshold.value <- 0.005 # 0.05/no.of.top.genes -  Bonferroni cut-off
+no.of.top.genes <- as.numeric(argv$topgenecount) # 250
+toptable.sortby <- "p"
+fold.change <- as.numeric(argv$foldchange) # 0.3
+threshold.value <- as.numeric(argv$thresholdvalue)	 # 0.005 # 0.05/no.of.top.genes -  Bonferroni cut-off
 
 
 #############################################################################
-#                        Testing Variables                         #
+#                        Testing Variables                         			#
 #############################################################################
 
 #factor_type  <- 'genotype/variation'
@@ -70,26 +95,27 @@ threshold.value <- 0.005 # 0.05/no.of.top.genes -  Bonferroni cut-off
 #factor_type  <- 'infection'
 
 #############################################################################
-#                        GEO Input                          #
+#                        GEO Input                      				    #
 #############################################################################
 
 # import data sets and process into expression data
-gse              <- getGEO(accession.id, GSEMatrix = TRUE)       # Load GEO data
-met              <- Meta(gse)
-eset             <- GDS2eSet(gse, do.log2=TRUE)                  # Convert into ExpressionSet Object
-X                <- exprs(eset)                                  # Get Expression Data
+gse               <- getGEO(accession.id, GSEMatrix = TRUE)       # Load GEO data
+met               <- Meta(gse)
+eset              <- GDS2eSet(gse, do.log2=TRUE)                  # Convert into ExpressionSet Object
+X                 <- exprs(eset)                                  # Get Expression Data
 gene.names        <- as.character(gse@dataTable@table$IDENTIFIER) # Store gene names
 names(gene.names) <- rownames(X)
-pClass           <- pData(eset)[factor.type]
-colnames(pClass) <- 'factor.type'
-samples          <- rownames(pClass)
+pClass            <- pData(eset)[factor.type]
+colnames(pClass)  <- 'factor.type'
+samples           <- rownames(pClass)
 
 #############################################################################
-#                        Two Population Preparation                          #
+#                        Two Population Preparation                         #
 #############################################################################
 
 # Create a data frame with the factors
 expression.info  <- data.frame(pClass, Sample = samples, row.names = samples)
+
 
 # Introduce two columns to expression.info - 
 #   1. population - new two groups/populations
@@ -101,12 +127,14 @@ expression.info <- within(expression.info, {
                                 ifelse( factor.type %in% population2, pop.colour2, '#000000') ) # if false
 })
 
+
 # Convert to a factor
 expression.info$population <- as.factor(expression.info$population)
 
 data <- within(melt(X), {
     phenotypes = expression.info[Var2, 'factor.type']
 })
+
 
 # Remove samples that are not belongs to two populations
 expression.info <- expression.info[complete.cases(expression.info),]
@@ -116,8 +144,10 @@ X <- X[,(colnames(X) %in% rownames(expression.info))]
 newPClass           <- expression.info$population
 names(newPClass)    <- expression.info$Sample
 
+
+
 #############################################################################
-#                        Meta Data Access                         #
+#                        Meta Data Access                 			        #
 #############################################################################
 
 # Obtain a vector of the possible factors
@@ -174,6 +204,7 @@ find.toptable <- function(X, newPClass, toptable.sortby, no.of.top.genes, gene.n
     return(toptable)
 }
 
+
 filtered.toptable <- function(toptable, gene.names){
     toptable['gene'] <- gene.names[rownames(toptable)]
     
@@ -184,7 +215,7 @@ filtered.toptable <- function(toptable, gene.names){
     return(X.toptable)
 }
 #############################################################################
-#                        Graphical Representation                          #
+#                        Graphical Representation                           #
 #############################################################################
 
 samples.boxplot <- function(){
@@ -220,25 +251,34 @@ volcanoplot1 <- function(toptable){
     # store Volcano plot as an .svg file in the working directory
     filename <- paste(output.dir,"Volcano.svg",sep = "")
     CairoSVG(file = filename)
-    with(toptable, plot(logFC, -log10(P.Value), pch=20, main="Volcano plot", xlim = c(-1.25, 1.25),ylim = c(0, 27)))
+    with(toptable, plot(logFC, -log10(P.Value), pch=20, main="Volcano plot", xlim = c(-max(toptable$logFC)-0.1, max(toptable$logFC)+0.1),ylim = c(0, max(-log10(toptable$P.Value))+0.5)))
     #volcanoplot(fit, coef=1, highlight=20, names=gene.names, col='steelblue', xlab='Log Fold Change',
     #            ylab='Log Odds', pch=16, cex=0.5)
     dev.off()
 }
 
-#Bonferroni cut-off
 
-volcanoplot2 <- function(toptable,fold.change, t = 0.05/no.of.top.genes){
+                                                #Bonferroni cut-off    
+volcanoplot2 <- function(toptable,fold.change, t = 0.05/length(gene.names)){
     
-    ##Highlight genes that have an absolute fold change > 2 and a p-value < Bonferroni cut-off
+    # Highlight genes that have an absolute fold change > 2 and a p-value < Bonferroni cut-off
     toptable$threshold = as.factor(abs(toptable$logFC) > fold.change & toptable$P.Value < t)
     
-    ##Construct the plot object
+    # Construct the plot object
     vol = ggplot(data=toptable, aes(x=toptable$logFC, y=-log10(toptable$P.Value), colour=threshold)) +
-        geom_point(alpha=0.4, size=1.75)  + xlim(c(-1.25, 1.25)) + ylim(c(0, 27)) +
+        geom_point(alpha=0.4, size=1.75)  + xlim(c(-max(toptable$logFC)-0.1, max(toptable$logFC)+0.1)) + ylim(c(0, max(-log10(toptable$P.Value))+0.5)) +
         xlab("log2 fold change") + ylab("-log10 p-value")
     filename <- paste(output.dir,"Volcanoplot2.svg",sep = "")
     ggsave(filename, plot=vol, height = 6, width = 6)
+}
+
+get.vol.data <- function(toptable,fold.change, t = 0.05/length(gene.names)){
+    
+    vol <- data.frame(cbind(round(toptable$logFC,3), round(-log10(toptable$P.Value),3)))
+   # colnames(vol) <- c("logFC", "pVal")
+    vol.list <- list(logFC = round(toptable$logFC,3),
+                     pVal  = round(-log10(toptable$P.Value),3))
+    return(vol.list)
 }
 
 top.genes <- function(toptable, n){
@@ -253,79 +293,60 @@ clustering <- function(dist.method = "euclidean", clust.method = "average"){
     labels_colors(dend) <- expression.info$population.colour[order.dendrogram(dend)]
     filename <- paste(output.dir,"Cluster.svg",sep = "")
     CairoSVG(file = filename)
-    plot(dend)
+    plot(dend, main = "Cluster Dendrogram", xlab = "Samples")
     dev.off()
 }
 
 # ------- Principal Component Analysis ----------
-# 
-# Xpca <- prcomp(t(X), scale= TRUE)
-# attributes(Xpca)
-# 
-# s <- summary(Xpca)
-# str(s)
-# 
-# # Explained Variance
-# expVar <- s$importance[2,] * 100   # convert to %
-# expVar
-# 
-# barplot(expVar, xlab = "Principal Components", ylab = "Explained Variance (%)",
-#         col ="steelblue")
-# 
-# # Cumulative Variance
-# cumVar <- s$importance[3,] * 100
-# 
-# plot(cumVar, type="o" ,col="black", pch=21, bg="blue", cex=0.8, ylab="Cumulative Variance",
-#      xlab="Principal Components")
-# 
-# Xscores <- Xpca$x
-# 
-# Xloadings <- Xpca$rotation
-# 
-# 
-# pValues <- c()
-# for (i in 1:nrow(X)) {
-#     res <- t.test(X[i,controlIndex],X[i,virusIndex])
-#     pValues <- c(pValues, res$p.value)
-# }
-# names(pValues) <- geneNames
-# topGenesIndx <- order(pValues)[1:50]
-# topGeneNames <- geneNames[topGenesIndx]
-# topGeneNames
-# 
-# Xpca <- prcomp(t(X[topGenesIndx, ]), scale= TRUE)
-# # Explained Variance
-# expVar <- s$importance[2,] * 100
-# expVar
-# 
-# barplot(expVar, xlab = "Principal Components", ylab = "Explained Variance (%)",
-#         col ="steelblue")
-# 
-# # Cumulative Variance
-# cumVar <- s$importance[3,] * 100
-# cumVar
-# 
-# plot(cumVar, type="o" ,col="black", pch=21, bg="blue", cex=0.8, ylab="Cumulative Variance",
-#      xlab="Principal Components")
-# 
-# Xscores <- Xpca$x
-# plot(Xscores, xlab="PC1", ylab="PC2", pch=21, bg=colour, cex=0.7,
-#      cex.lab=0.7, cex.axis = 0.7)
+
+get.pc.data <- function(X){
+    Xpca <- prcomp(t(X), scale= TRUE)
+    s <- summary(Xpca)
+    
+    
+    
+    # Individual contribution of each princle component
+    expVar <- s$importance[2,] * 100   # convert to %
+    
+    # Cumulative Variance
+    cumVar <- s$importance[3,] * 100
+    
+    pcnames <-names(expVar)
+    
+    names(expVar) <- NULL
+    names(cumVar) <- NULL
+    
+    results <- list(pcnames = pcnames,
+                    expVar = expVar,
+                    cumVar = cumVar)
+    
+    return(results)
+}
+
+
 
 #############################################################################
-#                        Function Calling                          #
+#                        Function Calling             		                #
 #############################################################################
 
-exportJson <- generate.geo.summary.json(pDat, met)
+exportJson <- generate.geo.summary.json(pData(eset), met)
 write(exportJson, 'factors.json')
 
-no.of.top.genes<-54715
+no.of.top.genes<-250
 samples.boxplot()
 toptable <- find.toptable(X, newPClass, toptable.sortby, no.of.top.genes, gene.names)
 X.toptable <- filtered.toptable(toptable, gene.names)
 heatmap(X.toptable,expression.info$population.colour)
 adj.p.val.histogram(toptable)
+toptable.all <- find.toptable(X, newPClass, toptable.sortby, length(gene.names) , gene.names)
 volcanoplot1(toptable)
-volcanoplot2(toptable,fold.change)
+volcanoplot2(toptable.all,fold.change)
 top.genes(toptable,no.of.top.genes)
 clustering()
+
+filename <- paste(output.dir,"data.json",sep = "")
+pcdata <- get.pc.data(X)
+volcanoplot.data <- get.vol.data(toptable,fold.change)
+json.list <- list(pc = pcdata, vol = volcanoplot.data)
+write(toJSON(json.list), filename)
+
