@@ -45,7 +45,7 @@ biocLite(c("gage","gageData","GO.db", "pathview" ))
 library(gage) #Does the analysis
 library(gageData) #Lets data be used by gage
 library(pathview) #Visualises interaction networks & used to get ENTREZ IDs
-library(GO.db) ##Downloads GO datasets
+#library(GO.db) - For possible deletion
 
 
 #------------
@@ -98,8 +98,7 @@ Group2<-c()
 
 for (a in 1:length(pDat$sample)){
   if (pDat$infection[a] == "Dengue virus"){
-    Group1_pos<- grep(pDat$sample[a], cn)
-    Group1<-c(Group1, Group1_pos)
+    Group1<-c(Group1, (grep(pDat$sample[a], cn)))
   }
   if (pDat$infection[a] == "control"){
     Group2<- c(Group2, (grep(pDat$sample[a], cn)))
@@ -108,7 +107,7 @@ for (a in 1:length(pDat$sample)){
 
 ##Load gene sets
 data(kegg.gs)
-data(go.gs)
+#data(go.gs) - For possible deletion
 
 
 ##Loading human kegg gene sets
@@ -119,13 +118,13 @@ kegg.gs=kg.hsa$kg.sets[kg.hsa$sigmet.idx] #no idea but doesn't seem to work with
 
 save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R object
 
-##Loading human GO gene sets
+##Loading human GO gene sets - for possible deletion
 
-go.hs=go.gsets(species="human")
-go.bp=go.hs$go.sets[go.hs$go.subs$BP]
-go.mf=go.hs$go.sets[go.hs$go.subs$MF]
-go.cc=go.hs$go.sets[go.hs$go.subs$CC]
-save(go.bp, go.mf, go.cc, file="go.hs.gsets.RData")
+#go.hs=go.gsets(species="human")
+#go.bp=go.hs$go.sets[go.hs$go.subs$BP]
+#go.mf=go.hs$go.sets[go.hs$go.subs$MF]
+#go.cc=go.hs$go.sets[go.hs$go.subs$CC]
+#save(go.bp, go.mf, go.cc, file="go.hs.gsets.RData")
 #for Bioconductor species supported by go.gsets function:
 #data(bods)
 #print(bods)
@@ -176,6 +175,7 @@ sigGeneSet(GEOdataset.kegg.p, outname="GEOdatasetUP.kegg", heatmap= TRUE)
 
 ##Returns number of two-direction enriched gene sets
 GEOdataset.kegg.2d.sig<-sigGeneSet(GEOdataset.kegg.2d.p, outname="GEOdataset.kegg")
+sigGeneSet(GEOdataset.kegg.2d.sig, outname="Two_way", heatmap= TRUE)
 
 
 
