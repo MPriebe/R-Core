@@ -57,40 +57,40 @@ output.dir     <- "/Users/nazrathnawaz/Desktop/"
 
 # set parsers for all input arguments
 parser <- arg_parser("This parser contains the input arguments")
-parser <- add_argument(parser, "--accession"	  , help="input file")		# GEO Accession ID
-parser <- add_argument(parser, "--factor"		  , help="input file")		# Factor type to be classified by
-parser <- add_argument(parser, "--popA", nargs='+', help="input file")		# GroupA - all the selected phenotypes (atleast one)
-parser <- add_argument(parser, "--popB", nargs='+', help="input file")		# GroupB - all the selected phenotypes (atleast one)
-parser <- add_argument(parser, "--popname1"		  , help="input file")		# name for GroupA
-parser <- add_argument(parser, "--popname2"		  , help="input file")		# name for GroupB
-parser <- add_argument(parser, "--topgenecount"	  , help="input file")		# number of top genes to be used
-parser <- add_argument(parser, "--foldchange"	  , help="input file")		# fold change cut off
-parser <- add_argument(parser, "--thresholdvalue" , help="input file")		# threshold value cut off
+parser <- add_argument(parser, "--accession"    , help="input file")    # GEO Accession ID
+parser <- add_argument(parser, "--factor"     , help="input file")    # Factor type to be classified by
+parser <- add_argument(parser, "--popA", nargs='+', help="input file")    # GroupA - all the selected phenotypes (atleast one)
+parser <- add_argument(parser, "--popB", nargs='+', help="input file")    # GroupB - all the selected phenotypes (atleast one)
+parser <- add_argument(parser, "--popname1"     , help="input file")    # name for GroupA
+parser <- add_argument(parser, "--popname2"     , help="input file")    # name for GroupB
+parser <- add_argument(parser, "--topgenecount"   , help="input file")    # number of top genes to be used
+parser <- add_argument(parser, "--foldchange"   , help="input file")    # fold change cut off
+parser <- add_argument(parser, "--thresholdvalue" , help="input file")    # threshold value cut off
 
 # allow arguments to be run via the command line
 argv <- parse_args(parser)
 
 
 # --------- Geo DataSet Input ------------ #
-accession.id    <- argv$accession 					# 'GDS5093' # GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
-factor.type     <- argv$factor 						# 'disease.state'
+accession.id    <- argv$accession           # 'GDS5093' # GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
+factor.type     <- argv$factor            # 'disease.state'
 population1     <- unlist(strsplit(argv$popA, ",")) # c('Dengue Hemorrhagic Fever','Convalescent')
 population2     <- unlist(strsplit(argv$popB, ",")) # c('healthy control')
-pop.name1       <- argv$popname1 					# "Dengue"
-pop.name2       <- argv$popname2 					# "Normal"
-pop.colour1     <- "#b71c1c" 						# Red  
-pop.colour2     <- "#0d47a1" 						# Blue 
+pop.name1       <- argv$popname1          # "Dengue"
+pop.name2       <- argv$popname2          # "Normal"
+pop.colour1     <- "#b71c1c"            # Red  
+pop.colour2     <- "#0d47a1"            # Blue 
 
 
 # --------- Volcano Plot ------------ #
-no.of.top.genes <- as.numeric(argv$topgenecount) 	 # 250
-toptable.sortby <- "p" 								 # sort by p-value (default)
-fold.change <- as.numeric(argv$foldchange) 			 # 0.3
-threshold.value <- as.numeric(argv$thresholdvalue)	 # 0.005 # 0.05/no.of.top.genes -  Bonferroni cut-off
+no.of.top.genes <- as.numeric(argv$topgenecount)   # 250
+toptable.sortby <- "p"                 # sort by p-value (default)
+fold.change <- as.numeric(argv$foldchange)       # 0.3
+threshold.value <- as.numeric(argv$thresholdvalue)   # 0.005 # 0.05/no.of.top.genes -  Bonferroni cut-off
 
 
 #############################################################################
-#                        Testing Variables                         			#
+#                        Testing Variables                              #
 #############################################################################
 
 #factor_type  <- 'genotype/variation'
@@ -98,12 +98,12 @@ threshold.value <- as.numeric(argv$thresholdvalue)	 # 0.005 # 0.05/no.of.top.gen
 #factor_type  <- 'infection'
 
 #############################################################################
-#                        GEO Input                      				    #
+#                        GEO Input                                  #
 #############################################################################
 
 # import data sets and process into expression data
 gse               <- getGEO(accession.id, GSEMatrix = TRUE)       # Load GEO data
-met               <- Meta(gse)									  # Extract meta data
+met               <- Meta(gse)                    # Extract meta data
 eset              <- GDS2eSet(gse, do.log2=TRUE)                  # Convert into ExpressionSet Object
 X                 <- exprs(eset)                                  # Get Expression Data
 gene.names        <- as.character(gse@dataTable@table$IDENTIFIER) # Store gene names
@@ -150,7 +150,7 @@ names(newPClass)    <- expression.info$Sample
 
 
 #############################################################################
-#                        Meta Data Access                 			        #
+#                        Meta Data Access                               #
 #############################################################################
 
 # Obtain a vector of the possible factors
@@ -183,7 +183,7 @@ generate.geo.summary.json <- function(pDat, met, factors)  {
 
 
 #############################################################################
-#                        Top Table                    				        #
+#                        Top Table                                    #
 #############################################################################
 
 find.toptable <- function(X, newPClass, toptable.sortby, no.of.top.genes, gene.names){
@@ -339,7 +339,7 @@ get.pc.data <- function(X){
 
 
 #############################################################################
-#                        Function Calling             		                #
+#                        Function Calling                                 #
 #############################################################################
 
 exportJson <- generate.geo.summary.json(pData(eset), met)
