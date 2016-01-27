@@ -6,7 +6,7 @@
 # ---------------------------------------------------------
 
 #### TO DO LIST ####
-# SVG and PNG
+# png and PNG
 # .Rdata
 ####
 
@@ -52,37 +52,40 @@ library('reshape2')
 #                        Command Line Arguments                             #
 #############################################################################
 
+# output directory (CHANGE)
 output.dir     <- "/Users/nazrathnawaz/Desktop/"
 
-parser <- arg_parser("this is a test 1")
-parser <- add_argument(parser, "--accession", help="input file")
-parser <- add_argument(parser, "--factor", help="input file")
-parser <- add_argument(parser, "--popA", nargs='+', help="input file")
-parser <- add_argument(parser, "--popB", nargs='+', help="input file")
-parser <- add_argument(parser, "--popname1", help="input file")
-parser <- add_argument(parser, "--popname2", help="input file")
-parser <- add_argument(parser, "--topgenecount", help="input file")
-parser <- add_argument(parser, "--foldchange", help="input file")
-parser <- add_argument(parser, "--thresholdvalue", help="input file")
+# set parsers for all input arguments
+parser <- arg_parser("This parser contains the input arguments")
+parser <- add_argument(parser, "--accession"	  , help="input file")		# GEO Accession ID
+parser <- add_argument(parser, "--factor"		  , help="input file")		# Factor type to be classified by
+parser <- add_argument(parser, "--popA", nargs='+', help="input file")		# GroupA - all the selected phenotypes (atleast one)
+parser <- add_argument(parser, "--popB", nargs='+', help="input file")		# GroupB - all the selected phenotypes (atleast one)
+parser <- add_argument(parser, "--popname1"		  , help="input file")		# name for GroupA
+parser <- add_argument(parser, "--popname2"		  , help="input file")		# name for GroupB
+parser <- add_argument(parser, "--topgenecount"	  , help="input file")		# number of top genes to be used
+parser <- add_argument(parser, "--foldchange"	  , help="input file")		# fold change cut off
+parser <- add_argument(parser, "--thresholdvalue" , help="input file")		# threshold value cut off
 
+# allow arguments to be run via the command line
 argv <- parse_args(parser)
 
 
-# --------- Geo DataSet Input ------------
-accession.id    <- argv$accession # 'GDS5093' # GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
-factor.type     <- argv$factor # 'disease.state'
+# --------- Geo DataSet Input ------------ #
+accession.id    <- argv$accession 					# 'GDS5093' # GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
+factor.type     <- argv$factor 						# 'disease.state'
 population1     <- unlist(strsplit(argv$popA, ",")) # c('Dengue Hemorrhagic Fever','Convalescent')
 population2     <- unlist(strsplit(argv$popB, ",")) # c('healthy control')
-pop.name1       <- argv$popname1 # "Dengue"
-pop.name2       <- argv$popname2 # "Normal"
-pop.colour1     <- "#b71c1c" # Red  
-pop.colour2     <- "#0d47a1" # Blue 
+pop.name1       <- argv$popname1 					# "Dengue"
+pop.name2       <- argv$popname2 					# "Normal"
+pop.colour1     <- "#b71c1c" 						# Red  
+pop.colour2     <- "#0d47a1" 						# Blue 
 
 
-# --------- Volcano Plot ------------
-no.of.top.genes <- as.numeric(argv$topgenecount) # 250
-toptable.sortby <- "p"
-fold.change <- as.numeric(argv$foldchange) # 0.3
+# --------- Volcano Plot ------------ #
+no.of.top.genes <- as.numeric(argv$topgenecount) 	 # 250
+toptable.sortby <- "p" 								 # sort by p-value (default)
+fold.change <- as.numeric(argv$foldchange) 			 # 0.3
 threshold.value <- as.numeric(argv$thresholdvalue)	 # 0.005 # 0.05/no.of.top.genes -  Bonferroni cut-off
 
 
@@ -100,7 +103,7 @@ threshold.value <- as.numeric(argv$thresholdvalue)	 # 0.005 # 0.05/no.of.top.gen
 
 # import data sets and process into expression data
 gse               <- getGEO(accession.id, GSEMatrix = TRUE)       # Load GEO data
-met               <- Meta(gse)
+met               <- Meta(gse)									  # Extract meta data
 eset              <- GDS2eSet(gse, do.log2=TRUE)                  # Convert into ExpressionSet Object
 X                 <- exprs(eset)                                  # Get Expression Data
 gene.names        <- as.character(gse@dataTable@table$IDENTIFIER) # Store gene names
@@ -155,6 +158,7 @@ get.factors <- function(pDat, remove.list = c('sample', 'description', 'individu
     return ( colnames(pDat)[ !colnames(pDat) %in% remove.list ] )
 }
 
+# create json files
 generate.geo.summary.json <- function(pDat, met, factors)  { 
     if (missing(factors)) {
         factors <- get.factors(pDat)
@@ -179,7 +183,7 @@ generate.geo.summary.json <- function(pDat, met, factors)  {
 
 
 #############################################################################
-#                        Top Table                          #
+#                        Top Table                    				        #
 #############################################################################
 
 find.toptable <- function(X, newPClass, toptable.sortby, no.of.top.genes, gene.names){
@@ -214,21 +218,25 @@ filtered.toptable <- function(toptable, gene.names){
     
     return(X.toptable)
 }
+
+
 #############################################################################
-#                        Graphical Representation                           #
+#                        Graphical Representations                          #
 #############################################################################
 
+# Initial Boxplot
 samples.boxplot <- function(){
     boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = phenotypes)) + theme(axis.text.x = element_text(angle = 90, hjust = 1, colour = as.vector(expression.info$population.colour)), legend.position = 'right')+ labs(x = 'Samples', y = 'Expression Levels')
-    # store Boxplot as an .svg file in the working directory
-    filename <- paste(output.dir,"boxplot.svg",sep = "")
+    # store Boxplot as an .png file in the working directory
+    filename <- paste(output.dir,"boxplot.png",sep = "")
     ggsave(filename, plot=boxplot, width = 8, height = 4)
 }
 
+# Heatmap
 heatmap <- function(X, sample.colours, cv = TRUE, rv = TRUE){
-    # store Heatmap as an .svg file in the working directory
-    filename <- paste(output.dir,"Heatmap.svg",sep = "")
-    CairoSVG(file = filename)
+    # store Heatmap as an .png file in the working directory
+    filename <- paste(output.dir,"Heatmap.png",sep = "")
+    CairoPNG(file = filename)
     color_scale <- colorRampPalette(rev(brewer.pal(11, 'Spectral')))(100)
     heatmap1 <- heatmap.2(X, col=color_scale, scale='row', 
                           key=T, keysize=1,
@@ -239,18 +247,20 @@ heatmap <- function(X, sample.colours, cv = TRUE, rv = TRUE){
     dev.off()
 }
 
+# Adjusted p-value barplot
 adj.p.val.histogram <- function(toptable){
-    # store Histogram as an .svg file in the working directory
-    filename <- paste(output.dir,"Histogram.svg",sep = "")
-    CairoSVG(file = filename)
+    # store Histogram as an .png file in the working directory
+    filename <- paste(output.dir,"Histogram.png",sep = "")
+    CairoPNG(file = filename)
     hist(toptable$adj.P.Val, breaks=100, col='skyblue', border='slateblue', xlab = "Adjusted p-values", main=NULL)
     dev.off()
 }
 
+# volcano plot
 volcanoplot1 <- function(toptable){
-    # store Volcano plot as an .svg file in the working directory
-    filename <- paste(output.dir,"Volcano.svg",sep = "")
-    CairoSVG(file = filename)
+    # store Volcano plot as an .png file in the working directory
+    filename <- paste(output.dir,"Volcano.png",sep = "")
+    CairoPNG(file = filename)
     with(toptable, plot(logFC, -log10(P.Value), pch=20, main="Volcano plot", xlim = c(-max(toptable$logFC)-0.1, max(toptable$logFC)+0.1),ylim = c(0, max(-log10(toptable$P.Value))+0.5)))
     #volcanoplot(fit, coef=1, highlight=20, names=gene.names, col='steelblue', xlab='Log Fold Change',
     #            ylab='Log Odds', pch=16, cex=0.5)
@@ -268,7 +278,7 @@ volcanoplot2 <- function(toptable,fold.change, t = 0.05/length(gene.names)){
     vol = ggplot(data=toptable, aes(x=toptable$logFC, y=-log10(toptable$P.Value), colour=threshold)) +
         geom_point(alpha=0.4, size=1.75)  + xlim(c(-max(toptable$logFC)-0.1, max(toptable$logFC)+0.1)) + ylim(c(0, max(-log10(toptable$P.Value))+0.5)) +
         xlab("log2 fold change") + ylab("-log10 p-value")
-    filename <- paste(output.dir,"Volcanoplot2.svg",sep = "")
+    filename <- paste(output.dir,"Volcanoplot2.png",sep = "")
     ggsave(filename, plot=vol, height = 6, width = 6)
 }
 
@@ -281,21 +291,24 @@ get.vol.data <- function(toptable,fold.change, t = 0.05/length(gene.names)){
     return(vol.list)
 }
 
+# Top genes table
 top.genes <- function(toptable, n){
     # store Top20 genes as a .csv file in the working directory
     filename <- paste(output.dir,"TopGenes.csv",sep = "")
     write.csv(toptable[1:n,], file = filename)
 }
 
+# Clustering dendogram
 clustering <- function(dist.method = "euclidean", clust.method = "average"){
     hc <- hclust(dist(t(X),dist.method), clust.method) 
     dend <- as.dendrogram(hc)
     labels_colors(dend) <- expression.info$population.colour[order.dendrogram(dend)]
-    filename <- paste(output.dir,"Cluster.svg",sep = "")
-    CairoSVG(file = filename)
+    filename <- paste(output.dir,"Cluster.png",sep = "")
+    CairoPNG(file = filename)
     plot(dend, main = "Cluster Dendrogram", xlab = "Samples")
     dev.off()
 }
+
 
 # ------- Principal Component Analysis ----------
 
