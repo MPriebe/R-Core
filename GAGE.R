@@ -6,6 +6,7 @@
 #The identity of the two groups (have an option to merge groups)
 # The GO dataset to be used.
 #the type of gene sets used (kegg.gs is only for humans)
+#paired or unpaired
 
 
 #---------------------------------
@@ -49,7 +50,6 @@ library(GO.db) ##Downloads GO datasets
 
 #------------
 ###Data prep
-#---------------------
 #------------
 
 
@@ -145,7 +145,7 @@ GEOdataset.bp.p <- gage(GEOdataset, gsets = go.bp,ref = Group2, samp = Group1, c
 
 
 
-#------visualisation & Results----------------------------------------------------------
+#------visualisation & Results------------------------------------------------------------------#
 
 ##Producing tables
 
@@ -172,7 +172,7 @@ write.table(rbind(GEOdataset.kegg.sig$greater, GEOdataset.kegg.sig$less), file =
 GEOdataset.kegg.sig<-sigGeneSet(GEOdataset.kegg.p, outname="GEOdataset.kegg")
 
 ##Its heatmap
-#sigGeneSet(GEOdataset.kegg.p, outname="GEOdatasetUP.kegg", heatmap= TRUE)
+sigGeneSet(GEOdataset.kegg.p, outname="GEOdatasetUP.kegg", heatmap= TRUE)
 
 ##Returns number of two-direction enriched gene sets
 GEOdataset.kegg.2d.sig<-sigGeneSet(GEOdataset.kegg.2d.p, outname="GEOdataset.kegg")
@@ -227,10 +227,19 @@ GEOdataset.kegg.esg.dn <- esset.grp(GEOdataset.kegg.p$less, GEOdataset, gsets = 
 
 ##Interaction networks
 
-GEOdataset.d <- GEOdataset[ ,Group1] - GEOdataset[ ,Group2] ## matrices are different sizes, doesn't work
+GEOdataset.d<-GEOdataset[, Group1]-rowMeans(GEOdataset[,Group2])
+
+##For upregulated gene pathways
 sel <- GEOdataset.kegg.p$greater[, "q.val"] < 0.1 & !is.na(GEOdataset.kegg.p$greater[, "q.val"])
 path.ids <- rownames(GEOdataset.kegg.p$greater)[sel]
-#Takes 1 to 8 values
-path.ids2 <- substr(path.ids, 1, 8) #???
-pv.out.list <- sapply(path.ids2, function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
+path.ids2 <- substr(path.ids, 1, 8) 
+##Produces  top 10 interaction networks
+pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
+
+##For down regulated gene pathways
+sel2 <- GEOdataset.kegg.p$less[, "q.val"] < 0.1 & !is.na(GEOdataset.kegg.p$greater[, "q.val"])
+path.ids3 <- rownames(GEOdataset.kegg.p$greater)[sel]
+path.ids4 <- substr(path.ids, 1, 8) 
+##Produces  top 10 interaction networks
+pv.out.list2 <- sapply(path.ids4[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
 
