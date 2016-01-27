@@ -253,7 +253,7 @@ samples.boxplot <- function(){
 # Heatmap
 heatmap <- function(X, sample.colours, cv = TRUE, rv = TRUE){
     # store Heatmap as an .png file in the working directory
-    filename <- paste(output.dir,"Heatmap.png",sep = "")
+    filename <- paste(output.dir,"heatmap.png",sep = "")
     CairoPNG(file = filename, width = 800, height = 800, pointsize = 12)
     color_scale <- colorRampPalette(rev(brewer.pal(11, 'Spectral')))(100)
     heatmap1 <- heatmap.2(X, col=color_scale, scale='row', 
@@ -268,7 +268,7 @@ heatmap <- function(X, sample.colours, cv = TRUE, rv = TRUE){
 # Adjusted p-value barplot
 adj.p.val.histogram <- function(toptable){
     # store Histogram as an .png file in the working directory
-    filename <- paste(output.dir,"Histogram.png",sep = "")
+    filename <- paste(output.dir,"histogram.png",sep = "")
     CairoPNG(file = filename, width = 600, height = 600)
     hist(toptable$adj.P.Val, breaks=100, col='skyblue', border='slateblue', xlab = "Adjusted p-values", main=NULL)
     dev.off()
@@ -277,7 +277,7 @@ adj.p.val.histogram <- function(toptable){
 # volcano plot
 volcanoplot1 <- function(toptable){
     # store Volcano plot as an .png file in the working directory
-    filename <- paste(output.dir,"Volcano.png",sep = "")
+    filename <- paste(output.dir,"volcano.png",sep = "")
     CairoPNG(file = filename, width = 600, height = 600)
     with(toptable, plot(logFC, -log10(P.Value), pch=20, main="Volcano plot", xlim = c(-max(toptable$logFC)-0.1, max(toptable$logFC)+0.1),ylim = c(0, max(-log10(toptable$P.Value))+0.5)))
     #volcanoplot(fit, coef=1, highlight=20, names=gene.names, col='steelblue', xlab='Log Fold Change',
@@ -296,7 +296,7 @@ volcanoplot2 <- function(toptable,fold.change, t = 0.05/length(gene.names)){
     vol = ggplot(data=toptable, aes(x=toptable$logFC, y=-log10(toptable$P.Value), colour=threshold)) +
         geom_point(alpha=0.4, size=1.75)  + xlim(c(-max(toptable$logFC)-0.1, max(toptable$logFC)+0.1)) + ylim(c(0, max(-log10(toptable$P.Value))+0.5)) +
         xlab("log2 fold change") + ylab("-log10 p-value")
-    filename <- paste(output.dir,"Volcanoplot2.png",sep = "")
+    filename <- paste(output.dir,"volcanoplot2.png",sep = "")
     ggsave(filename, plot=vol, height = 6, width = 6)
 }
 
@@ -312,7 +312,7 @@ get.vol.data <- function(toptable,fold.change, t = 0.05/length(gene.names)){
 # Top genes table
 top.genes <- function(toptable, n){
     # store Top20 genes as a .csv file in the working directory
-    filename <- paste(output.dir,"TopGenes.csv",sep = "")
+    filename <- paste(output.dir,"topgenes.csv",sep = "")
     write.csv(toptable[1:n,], file = filename)
 }
 
@@ -321,7 +321,7 @@ clustering <- function(dist.method = "euclidean", clust.method = "average"){
     hc <- hclust(dist(t(X),dist.method), clust.method) 
     dend <- as.dendrogram(hc)
     labels_colors(dend) <- expression.info$population.colour[order.dendrogram(dend)]
-    filename <- paste(output.dir,"Cluster.png",sep = "")
+    filename <- paste(output.dir,"cluster.png",sep = "")
     CairoPNG(file = filename, width = 800, height = 800, pointsize = 12)
     plot(dend, main = "Cluster Dendrogram", xlab = "Samples")
     dev.off()
