@@ -1,9 +1,9 @@
 #!/usr/bin/Rsript
-# ---------------------------------------------------------
-# Filename      : DGEA.R
-# Authors       : IsmailM, Nazrath, Suresh, Marian, Anissa
-# Description   : Differential Gene Expression Analysis
-# ---------------------------------------------------------
+# ---------------------------------------------------------#
+# Filename      : DGEA.R 								   #
+# Authors       : IsmailM, Nazrath, Suresh, Marian, Anissa #
+# Description   : Differential Gene Expression Analysis    # 
+# ---------------------------------------------------------#
 
 #### TO DO LIST ####
 # .Rdata
@@ -84,8 +84,8 @@ pop.colour2     <- "#0d47a1"            # Blue
 
 # --------- Volcano Plot ------------ #
 no.of.top.genes <- as.numeric(argv$topgenecount)   # 250
-toptable.sortby <- "p"                 # sort by p-value (default)
-fold.change <- as.numeric(argv$foldchange)       # 0.3
+toptable.sortby <- "p"                 				# sort by p-value (default)
+fold.change 	<- as.numeric(argv$foldchange)       # 0.3
 threshold.value <- as.numeric(argv$thresholdvalue)   # 0.005 # 0.05/no.of.top.genes -  Bonferroni cut-off
 
 
@@ -95,7 +95,25 @@ threshold.value <- as.numeric(argv$thresholdvalue)   # 0.005 # 0.05/no.of.top.ge
 
 #factor_type  <- 'genotype/variation'
 #factor_type  <- 'development.stage'
-#factor_type  <- 'infection'
+#factor_type  <- 'infection
+
+# --------- Geo DataSet Input ------------ #
+# accession.id    <- 'GDS5093' # GDS5092 GDS5091 GDS5088 GDS5086 GDS3795
+# factor.type     <- 'disease.state'
+# population1     <- c('Dengue Hemorrhagic Fever','Convalescent')
+# population2     <- c('healthy control')
+# pop.name1       <- "Dengue"
+# pop.name2       <- "Normal"
+# pop.colour1     <- "#b71c1c" 						# Red  
+# pop.colour2     <- "#0d47a1" 						# Blue 
+
+
+# # --------- Volcano Plot ------------ #
+
+# toptable.sortby <- "p" 								 # sort by p-value (default)
+# fold.change <- 0.3
+# threshold.value <- 0.005 # 0.05/no.of.top.genes -  Bonferroni cut-off
+
 
 #############################################################################
 #                        GEO Input                                  #
@@ -236,12 +254,12 @@ samples.boxplot <- function(){
 heatmap <- function(X, sample.colours, cv = TRUE, rv = TRUE){
     # store Heatmap as an .png file in the working directory
     filename <- paste(output.dir,"Heatmap.png",sep = "")
-    CairoPNG(file = filename)
+    CairoPNG(file = filename, width = 800, height = 800, pointsize = 12)
     color_scale <- colorRampPalette(rev(brewer.pal(11, 'Spectral')))(100)
     heatmap1 <- heatmap.2(X, col=color_scale, scale='row', 
                           key=T, keysize=1,
                           dendrogram='column', density.info='none', 
-                          trace='none', cexCol=0.5, cexRow=0.1,
+                          trace='none', cexCol=0.6, cexRow=0.1,
                           ColSideColors = sample.colours,
                           Colv = cv, Rowv = rv)
     dev.off()
@@ -251,7 +269,7 @@ heatmap <- function(X, sample.colours, cv = TRUE, rv = TRUE){
 adj.p.val.histogram <- function(toptable){
     # store Histogram as an .png file in the working directory
     filename <- paste(output.dir,"Histogram.png",sep = "")
-    CairoPNG(file = filename)
+    CairoPNG(file = filename, width = 600, height = 600)
     hist(toptable$adj.P.Val, breaks=100, col='skyblue', border='slateblue', xlab = "Adjusted p-values", main=NULL)
     dev.off()
 }
@@ -260,7 +278,7 @@ adj.p.val.histogram <- function(toptable){
 volcanoplot1 <- function(toptable){
     # store Volcano plot as an .png file in the working directory
     filename <- paste(output.dir,"Volcano.png",sep = "")
-    CairoPNG(file = filename)
+    CairoPNG(file = filename, width = 600, height = 600)
     with(toptable, plot(logFC, -log10(P.Value), pch=20, main="Volcano plot", xlim = c(-max(toptable$logFC)-0.1, max(toptable$logFC)+0.1),ylim = c(0, max(-log10(toptable$P.Value))+0.5)))
     #volcanoplot(fit, coef=1, highlight=20, names=gene.names, col='steelblue', xlab='Log Fold Change',
     #            ylab='Log Odds', pch=16, cex=0.5)
@@ -304,7 +322,7 @@ clustering <- function(dist.method = "euclidean", clust.method = "average"){
     dend <- as.dendrogram(hc)
     labels_colors(dend) <- expression.info$population.colour[order.dendrogram(dend)]
     filename <- paste(output.dir,"Cluster.png",sep = "")
-    CairoPNG(file = filename)
+    CairoPNG(file = filename, width = 800, height = 800, pointsize = 12)
     plot(dend, main = "Cluster Dendrogram", xlab = "Samples")
     dev.off()
 }
@@ -345,7 +363,7 @@ get.pc.data <- function(X){
 exportJson <- generate.geo.summary.json(pData(eset), met)
 write(exportJson, 'factors.json')
 
-no.of.top.genes<-250
+# no.of.top.genes<-250
 samples.boxplot()
 toptable <- find.toptable(X, newPClass, toptable.sortby, no.of.top.genes, gene.names)
 X.toptable <- filtered.toptable(toptable, gene.names)
