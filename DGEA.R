@@ -51,9 +51,6 @@ library('reshape2')
 #                        Command Line Arguments                             #
 #############################################################################
 
-# output directory (CHANGE)
-output.dir     <- "/Users/nazrathnawaz/Desktop/"
-
 # set parsers for all input arguments
 parser <- arg_parser("This parser contains the input arguments")
 parser <- add_argument(parser, "--accession"    , help="input file")    # GEO Accession ID
@@ -65,9 +62,13 @@ parser <- add_argument(parser, "--popname2"     , help="input file")    # name f
 parser <- add_argument(parser, "--topgenecount"   , help="input file")    # number of top genes to be used
 parser <- add_argument(parser, "--foldchange"   , help="input file")    # fold change cut off
 parser <- add_argument(parser, "--thresholdvalue" , help="input file")    # threshold value cut off
+parser <- add_argument(parser, "--working_dir"    , help="input file")    # GEO Accession ID
 
 # allow arguments to be run via the command line
 argv <- parse_args(parser)
+
+# output directory (CHANGE)
+output.dir     <- argv$working_dir
 
 
 # --------- Geo DataSet Input ------------ #
