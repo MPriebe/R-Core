@@ -1,19 +1,18 @@
-#Analysis specific to the dengue dataset.
+##Analysis specific to the dengue dataset.
 
-#Function to include the following arguments: 
-#Species= To be fed into bods to get org argument value
-#The column that contains the different groups
-#The identity of the two groups (have an option to merge groups)
+#----------------------Parameters to bare in mind-----------------------------
+
+# Function to include the following arguments: 
+# Species= To be fed into bods to get org argument value
+# The column that contains the different groups
+# The identity of the two groups (have an option to merge groups)
 # The GO dataset to be used.
-#the type of gene sets used (kegg.gs is only for humans)
-#paired or unpaired
+# The type of gene sets used (kegg.gs is only for humans)
+# paired or unpaired
 
 
-#---------------------------------
 
-###Loading the data
-
-#---------------------------------
+#----------------------Loading the data-------------------------------------
 
 
 source("http://bioconductor.org/biocLite.R")
@@ -33,11 +32,11 @@ eset <- GDS2eSet(gse, do.log2=TRUE)
 
 pDat <- pData(eset)
 
-#------------------------------------
 
-###Actually using GAGE
 
-#------------------------------------
+
+
+#---------------------------Using the GAGE package------------------------------
 
 
 ##Loading gage and associated gene sets
@@ -48,9 +47,8 @@ library(pathview) #Visualises interaction networks & used to get ENTREZ IDs
 library(GO.db) ##Downloads GO datasets
 
 
-#------------
-###Data prep
-#------------
+
+#------------------------Data Preparation----------------------------------------
 
 
 ##Remove probe ID column & convert into data matrix
@@ -80,10 +78,8 @@ rownames(GEOdataset) <- X1_matrix[,1]
 ##Convert to numerical matrix (for gage function)
 class(GEOdataset) <- "numeric"  
 
-#-------------------
-
-##Carrying out GAGE 
-#-------------------
+ 
+#-------------------Generally Applicable Gene-set Enrichment (GAGE)--------------------
 
 
 #Get positions of specific, in vector form
@@ -145,7 +141,7 @@ GEOdataset.bp.p <- gage(GEOdataset, gsets = go.bp,ref = Group2, samp = Group1, c
 
 
 
-#------visualisation & Results------------------------------------------------------------------#
+#---------------------Visualisation & Results-------------------------------------
 
 ##Producing tables
 
@@ -240,6 +236,7 @@ pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdata
 sel2 <- GEOdataset.kegg.p$less[, "q.val"] < 0.1 & !is.na(GEOdataset.kegg.p$greater[, "q.val"])
 path.ids3 <- rownames(GEOdataset.kegg.p$greater)[sel]
 path.ids4 <- substr(path.ids, 1, 8) 
+
 ##Produces  top 10 interaction networks
 pv.out.list2 <- sapply(path.ids4[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
 
