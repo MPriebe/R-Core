@@ -296,7 +296,7 @@ volcanoplot2 <- function(toptable,fold.change, t = 0.05/length(gene.names)){
     vol = ggplot(data=toptable, aes(x=toptable$logFC, y=-log10(toptable$P.Value), colour=threshold)) +
         geom_point(alpha=0.4, size=1.75)  + xlim(c(-max(toptable$logFC)-0.1, max(toptable$logFC)+0.1)) + ylim(c(0, max(-log10(toptable$P.Value))+0.5)) +
         xlab("log2 fold change") + ylab("-log10 p-value")
-    filename <- paste(output.dir,"volcanoplot2.png",sep = "")
+    filename <- paste(output.dir,"volcano.png",sep = "")
     ggsave(filename, plot=vol, height = 6, width = 6)
 }
 
