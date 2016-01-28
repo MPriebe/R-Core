@@ -8,7 +8,6 @@
 # The identity of the two groups (have an option to merge groups)
 # The GO dataset to be used.
 # The type of gene sets used (kegg.gs is only for humans)
-# paired or unpaired
 
 
 
@@ -44,7 +43,7 @@ biocLite(c("gage","gageData","GO.db", "pathview" ))
 library(gage) #Does the analysis
 library(gageData) #Lets data be used by gage
 library(pathview) #Visualises interaction networks & used to get ENTREZ IDs
-library(GO.db) ##Downloads GO datasets
+#library(GO.db) ##Loads GO database
 
 
 
@@ -94,17 +93,17 @@ Group2<-c()
 
 for (a in 1:length(pDat$sample)){
   if (pDat$infection[a] == "Dengue virus"){
-    Group1_pos<- grep(pDat$sample[a], cn)
-    Group1<-c(Group1, Group1_pos)
+    Group1<-c(Group1, (grep(pDat$sample[a], cn)))
   }
   if (pDat$infection[a] == "control"){
     Group2<- c(Group2, (grep(pDat$sample[a], cn)))
   }
 }
 
+
+
 ##Load gene sets
 data(kegg.gs)
-data(go.gs)
 
 
 ##Loading human kegg gene sets
@@ -115,28 +114,12 @@ kegg.gs=kg.hsa$kg.sets[kg.hsa$sigmet.idx] #no idea but doesn't seem to work with
 
 save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R object
 
-##Loading human GO gene sets
-
-go.hs=go.gsets(species="human")
-go.bp=go.hs$go.sets[go.hs$go.subs$BP]
-go.mf=go.hs$go.sets[go.hs$go.subs$MF]
-go.cc=go.hs$go.sets[go.hs$go.subs$CC]
-save(go.bp, go.mf, go.cc, file="go.hs.gsets.RData")
-#for Bioconductor species supported by go.gsets function:
-#data(bods)
-#print(bods)
-
-
 
 ##Using the gage function to carry out analysis
 
 
 #name           <- gage(data    ,  genesets used, control group, experimental group)
 GEOdataset.kegg.p <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, compare= 'unpaired')
-
-GEOdataset.go.p <- gage(GEOdataset, gsets = go.gs, ref = Group2, samp = Group1,compare= 'unpaired')
-
-GEOdataset.bp.p <- gage(GEOdataset, gsets = go.bp,ref = Group2, samp = Group1, compare= 'unpaired')
 
 
 
@@ -151,14 +134,9 @@ GEOdataset.kegg.2d.p <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = G
 #Table for two-analysis
 write.table(GEOdataset.kegg.2d.p$greater, file = "GEOdataset.kegg.2d.p.txt", sep = "\t")
 
-#Table for one-way analysis (upregulated and downgregulated gene sets)
-write.table(rbind(GEOdataset.kegg.p$greater, GEOdataset.kegg.p$less), file = "GEOdataset.kegg.p.txt", sep = "\t")
 
 #Table show top significant gene sets (for 2 way analysis)
 write.table(GEOdataset.kegg.2d.sig$greater, file = "GEOdataset.kegg.2d.sig.txt", sep = "\t")
-
-#For 1 way analysis
-write.table(rbind(GEOdataset.kegg.sig$greater, GEOdataset.kegg.sig$less), file = "GEOdataset.kegg.sig.txt", sep = "\t")
 
 
 
@@ -172,53 +150,8 @@ sigGeneSet(GEOdataset.kegg.p, outname="GEOdatasetUP.kegg", heatmap= TRUE)
 
 ##Returns number of two-direction enriched gene sets
 GEOdataset.kegg.2d.sig<-sigGeneSet(GEOdataset.kegg.2d.p, outname="GEOdataset.kegg")
+sigGeneSet(GEOdataset.kegg.2d.sig, outname="Two_way", heatmap= TRUE)
 
-
-
-
-## Creating a heatmap  #Need to convert back to gene symbol
-gs=unique(unlist(kegg.gs[rownames(GEOdataset.kegg.p$greater)[1:3]]))
-
-
-#Extract data for essential member genes in a gene set
-#Creates a table, and the row headers consist of the samples
-#In the order Group2, Group1
-essData=essGene(gs, GEOdataset, ref =Group2, samp =Group1, compare="unpaired")
-
-
-#Provide the new positions of the sample groups
-ref1=1:length(Group2)
-
-samp1=(length(ref1)+1): length(essData[1,])
-
-#Produces heatmaps for top 3 up-regulated KEGG pathways in a batch
-
-for (gs in rownames(GEOdataset.kegg.p$greater)[1:3]) {
-  outname = gsub(" |:|/", "_", substr(gs, 10, 100))
-  geneData(genes = kegg.gs[[gs]], exprs = essData, ref = ref1,
-           samp = samp1, outname = outname, txt = T, heatmap = T,
-           Colv = F, Rowv = F, dendrogram = "none", limit = 3, scatterplot = T)
-}
-
-
-
-#Produces heatmaps for top 3 down-regulated KEGG pathways in a batch
-#Too many genes!!!!! Consider using a cut off?
-
-for (gs in rownames(GEOdataset.kegg.p$less)[1:3]) {
-  outname = gsub(" |:|/", "_", substr(gs, 10, 100))
-  outname = paste(outname, "all", sep=".")
-  geneData(genes = kegg.gs[[gs]], exprs = GEOdataset, ref = Group2,
-           samp = Group1, outname = outname, txt = T, heatmap = T,
-           Colv = F, Rowv = F, dendrogram = "none", limit = 3, scatterplot = T)
-}
-
-
-##Non-redundant gene sets (can feasibly do table and heatmap??)
-
-GEOdataset.kegg.esg.up <- esset.grp(GEOdataset.kegg.p$greater, GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1,test4up = T, output = T, outname = "GEOdataset.kegg.up", make.plot = F, compare="unpaired")
-
-GEOdataset.kegg.esg.dn <- esset.grp(GEOdataset.kegg.p$less, GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, test4up = F, output = T, outname = "GEOdataset.kegg.dn", make.plot = F, compare="unpaired")
 
 
 ##Interaction networks
@@ -229,14 +162,29 @@ GEOdataset.d<-GEOdataset[, Group1]-rowMeans(GEOdataset[,Group2])
 sel <- GEOdataset.kegg.p$greater[, "q.val"] < 0.1 & !is.na(GEOdataset.kegg.p$greater[, "q.val"])
 path.ids <- rownames(GEOdataset.kegg.p$greater)[sel]
 path.ids2 <- substr(path.ids, 1, 8) 
-##Produces  top 10 interaction networks
+
+##Produces  top 3 interaction networks
 pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
+
+
+
+
 
 ##For down regulated gene pathways
 sel2 <- GEOdataset.kegg.p$less[, "q.val"] < 0.1 & !is.na(GEOdataset.kegg.p$greater[, "q.val"])
 path.ids3 <- rownames(GEOdataset.kegg.p$greater)[sel]
 path.ids4 <- substr(path.ids, 1, 8) 
 
-##Produces  top 10 interaction networks
+##Produces  top 3 interaction networks
 pv.out.list2 <- sapply(path.ids4[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
+
+
+
+
+
+
+
+
+
+
 
