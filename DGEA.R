@@ -80,25 +80,6 @@ toptable.sortby <- "p"
 fold.change 	<- as.numeric(argv$foldchange)       
 threshold.value <- as.numeric(argv$thresholdvalue) 
 
-
-# --------- Geo DataSet Input ------------ #          
-factor.type     <- "disease.state"           
-population1     <- c("Dengue Hemorrhagic Fever","Convalescent") 
-population2     <- c("healthy control") 
-pop.name1       <- "Dengue"         
-pop.name2       <- "Normal"       
-pop.colour1     <- "#b71c1c"  # Red  
-pop.colour2     <- "#0d47a1"  # Blue 
-
-
-# --------- Volcano Plot ------------ #
-no.of.top.genes <- 250 #as.numeric(argv$topgenecount)  
-toptable.sortby <- "p"                 				
-fold.change 	<- 0.3 #as.numeric(argv$foldchange)       
-threshold.value <- 0.05 #as.numeric(argv$thresholdvalue)   
-dbrdata <-"/Users/sureshhewapathirana/Desktop/GDS5093.rData"
-output.dir <-"/Users/sureshhewapathirana/Desktop/"
-
 if (file.exists(dbrdata)){
     load(file = dbrdata)
 }else{
@@ -175,18 +156,6 @@ find.toptable <- function(X, newPClass, toptable.sortby, no.of.top.genes, gene.n
     return(toptable)
 }
 
-filtered.toptable <- function(toptable, gene.names){
-    #toptable['gene'] <- gene.names[rownames(toptable)]
-    
-    #Create Sub Data
-   # X.toptable <- X[rownames(toptable),]
-    #rownames(X.toptable) <- gene.names[rownames(toptable)]
-    X.toptable <-X[toptable$ID,names(newPClass)]
-    
-    return(X.toptable)
-}
-
-
 #############################################################################
 #                        Graphical Representations                          #
 #############################################################################
@@ -204,6 +173,8 @@ heatmap <- function(X, sample.colours, cv = TRUE, rv = TRUE){
                           trace='none', cexCol=0.6, cexRow=0.1,
                           ColSideColors = sample.colours,
                           Colv = cv, Rowv = rv)
+    legend("topright", legend = c(pop.name1,pop.name2), horiz = TRUE,
+           col = c(pop.colour1,pop.colour2),cex=0.7, lwd = 7)
     dev.off()
 }
 
@@ -284,7 +255,8 @@ analysis.list <- c("Toptable","Volcano", "PCA","Heatmap", "Clustering")
 
 if ("Toptable" %in% analysis.list){
     toptable <- find.toptable(X, newPClass, toptable.sortby, no.of.top.genes, gene.names)
-    X.toptable <- filtered.toptable(toptable, gene.names)
+    #Create Sub Data
+    X.toptable <-X[toptable$ID,names(newPClass)]
     toptable.all <- find.toptable(X, newPClass, toptable.sortby, length(gene.names) , gene.names)
     json.list<- append(json.list,list(topgenes = toptable))
 }
@@ -301,7 +273,7 @@ if ("PCA" %in% analysis.list){
     }else{
         pcdata <- get.pc.data(X)
     }
-    pcdata <- get.pc.data(newX)
+   # pcdata <- get.pc.data(newX)
     json.list<- append(json.list, list(pc = pcdata))
 }
 
@@ -319,4 +291,4 @@ if(length(json.list) != 0){
 }
 
 # Clear terminal screen
-system('clear') 
+#system('clear') 
