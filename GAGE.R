@@ -82,7 +82,7 @@ class(GEOdataset) <- "numeric"
 
 
 #Get positions of specific, in vector form
-cn=colnames(X1_matrix2)
+cn=colnames(GEOdataset)
 
 ##Find out which group each sample is part of
 ##Use this to form two groups of samples for further analysis
