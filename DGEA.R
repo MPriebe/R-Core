@@ -46,16 +46,19 @@ library('reshape2')
 
 # set parsers for all input arguments
 parser <- arg_parser("This parser contains the input arguments")
+parser <- add_argument(parser, "--dbrdata", help="Full Path to RData containing loaded GEO dataset")
+parser <- add_argument(parser, "--geodbpath", help="GEO Dataset full path")
+parser <- add_argument(parser, "--accession", help="Accession Number of the GEO Database")
+parser <- add_argument(parser, "--outputdir", help="The output directory where graphs get saved")
 parser <- add_argument(parser, "--factor", help="Factor type to be classified by")
-parser <- add_argument(parser, "--popA", nargs='+', help="GroupA - all the selected phenotypes (atleast one)")
-parser <- add_argument(parser, "--popB", nargs='+', help="GroupB - all the selected phenotypes (atleast one)")
+parser <- add_argument(parser, "--popA", help="Phenotypes in Group A", nargs='+')
+parser <- add_argument(parser, "--popB", help="Phenotypes in Group B", nargs='+')
 parser <- add_argument(parser, "--popname1", help="name for GroupA")
 parser <- add_argument(parser, "--popname2", help="name for GroupB")
 parser <- add_argument(parser, "--topgenecount", help="number of top genes to be used")
 parser <- add_argument(parser, "--foldchange", help="fold change cut off")
 parser <- add_argument(parser, "--thresholdvalue", help="threshold value cut off")
-parser <- add_argument(parser, "--outputdir", help="The outout directory where graphs get saved")
-parser <- add_argument(parser, "--dbrdata", help="Downloaded GEO dataset full path")
+
 
 # allow arguments to be run via the command line
 argv <- parse_args(parser)
@@ -80,9 +83,15 @@ threshold.value <- as.numeric(argv$thresholdvalue)
 
 if (file.exists(dbrdata)){
     load(file = dbrdata)
-}else{
-    print("ERROR:File not found")
-    q(save = "default")
+} else {
+  if (is.null(argv$geodbpath)) {
+      gse <- getGEO(filename = argv$geodbpath, GSEMatrix = TRUE) # Load data from downloaded file
+  } else {
+      gse <- getGEO(argv$accession, GSEMatrix = TRUE)            # Automatically Load GEO dataset
+  }
+  met  <- Meta(gse)                                              # Extract meta data
+  eset <- GDS2eSet(gse, do.log2=TRUE)                            # Convert into ExpressionSet Object
+  X    <- exprs(eset)                                            # Get Expression Data
 }
 
 #############################################################################
@@ -189,7 +198,6 @@ clustering <- function(dist.method = "euclidean", clust.method = "average"){
 
                                                 #Bonferroni cut-off
 volcanoplot <- function(toptable,fold.change, t = 0.05/length(gene.names)){
-
     # Highlight genes that have an absolute fold change > 2 and a p-value < Bonferroni cut-off
     toptable$threshold = as.factor(abs(toptable$logFC) > fold.change & toptable$P.Value < t)
 
@@ -202,7 +210,6 @@ volcanoplot <- function(toptable,fold.change, t = 0.05/length(gene.names)){
 }
 
 get.vol.data <- function(toptable){
-
     vol.list <- list( genes = toptable$ID,
                       logFC = round(toptable$logFC, 3),
                       pVal  = round(-log10(toptable$P.Value), 3) )
