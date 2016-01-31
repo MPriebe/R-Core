@@ -31,22 +31,22 @@ parser <- add_argument(parser, "--accession", help="Accession Number of the GEO 
 parser <- add_argument(parser, "--outrdata", help="ful path to rData")
 argv   <- parse_args(parser)
 
-accession.id    <-  argv$accession
-geodbpath       <- argv$geodbpath
+accession.id <- argv$accession
+geodbpath    <- argv$geodbpath
 
 #############################################################################
-#                        GEO Input                      				    #
+#                        GEO Input                                          #
 #############################################################################
 
 # import data sets and process into expression data
 if(is.null(geodbpath)){
-    gse <- getGEO(filename = geodbpath, GSEMatrix = TRUE)       # Load data from downloaded file
+    gse <- getGEO(filename = geodbpath, GSEMatrix = TRUE) # Load data from downloaded file
 }else{
-    gse <- getGEO(accession.id, GSEMatrix = TRUE)                 # Automatically Load GEO dataset
+    gse <- getGEO(accession.id, GSEMatrix = TRUE)         # Automatically Load GEO dataset
 }
-met               <- Meta(gse)                                    # Extract meta data
-eset              <- GDS2eSet(gse, do.log2=TRUE)                  # Convert into ExpressionSet Object
-X                 <- exprs(eset)                                  # Get Expression Data
+met  <- Meta(gse)                                         # Extract meta data
+eset <- GDS2eSet(gse, do.log2=TRUE)                       # Convert into ExpressionSet Object
+X    <- exprs(eset)                                       # Get Expression Data
 
 if(is.null(argv$outrdata)){
     save.image(file = argv$outrdata )
