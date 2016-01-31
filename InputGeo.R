@@ -28,7 +28,7 @@ library('GEOquery')
 parser <- arg_parser("Input GEO Dataset")
 parser <- add_argument(parser, "--geodbpath", help="GEO Dataset full path")
 parser <- add_argument(parser, "--accession", help="Accession Number of the GEO Database")
-parser <- add_argument(parser, "--outrdata", help="ful path to rData")
+parser <- add_argument(parser, "--outrdata", help="Full path to the output rData file")
 argv   <- parse_args(parser)
 
 accession.id <- argv$accession
