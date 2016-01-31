@@ -1,12 +1,10 @@
 #!/usr/bin/Rsript
 # ---------------------------------------------------------#
-# Filename      : DGEA.R                   #
+# Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anissa #
 # Description   : Differential Gene Expression Analysis    #
 # Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --outputdir "/Users/sureshhewapathirana/Desktop/"
 # ---------------------------------------------------------#
-
-
 
 #############################################################################
 #       Load necessary dependancies, if not previously installed            #
@@ -48,36 +46,36 @@ library('reshape2')
 
 # set parsers for all input arguments
 parser <- arg_parser("This parser contains the input arguments")
-parser <- add_argument(parser, "--factor"     , help="Factor type to be classified by")
+parser <- add_argument(parser, "--factor", help="Factor type to be classified by")
 parser <- add_argument(parser, "--popA", nargs='+', help="GroupA - all the selected phenotypes (atleast one)")
 parser <- add_argument(parser, "--popB", nargs='+', help="GroupB - all the selected phenotypes (atleast one)")
-parser <- add_argument(parser, "--popname1"     , help="name for GroupA")
-parser <- add_argument(parser, "--popname2"     , help="name for GroupB")
-parser <- add_argument(parser, "--topgenecount"   , help="number of top genes to be used")
-parser <- add_argument(parser, "--foldchange"   , help="fold change cut off")
-parser <- add_argument(parser, "--thresholdvalue" , help="threshold value cut off")
-parser <- add_argument(parser, "--outputdir"    , help="The outout directory where graphs get saved")
-parser <- add_argument(parser, "--dbrdata"    , help="Downloaded GEO dataset full path")
+parser <- add_argument(parser, "--popname1", help="name for GroupA")
+parser <- add_argument(parser, "--popname2", help="name for GroupB")
+parser <- add_argument(parser, "--topgenecount", help="number of top genes to be used")
+parser <- add_argument(parser, "--foldchange", help="fold change cut off")
+parser <- add_argument(parser, "--thresholdvalue", help="threshold value cut off")
+parser <- add_argument(parser, "--outputdir", help="The outout directory where graphs get saved")
+parser <- add_argument(parser, "--dbrdata", help="Downloaded GEO dataset full path")
 
 # allow arguments to be run via the command line
-argv            <- parse_args(parser)
+argv <- parse_args(parser)
 
 
 # --------- Geo DataSet Input ------------ #
-factor.type     <- argv$factor
-population1     <- unlist(strsplit(argv$popA, ","))
-population2     <- unlist(strsplit(argv$popB, ","))
-pop.name1       <- argv$popname1
-pop.name2       <- argv$popname2
-pop.colour1     <- "#b71c1c"  # Red
-pop.colour2     <- "#0d47a1"  # Blue
-output.dir     <- argv$outputdir
-dbrdata         <- argv$dbrdata
+factor.type <- argv$factor
+population1 <- unlist(strsplit(argv$popA, ","))
+population2 <- unlist(strsplit(argv$popB, ","))
+pop.name1   <- argv$popname1
+pop.name2   <- argv$popname2
+pop.colour1 <- "#b71c1c"  # Red
+pop.colour2 <- "#0d47a1"  # Blue
+output.dir  <- argv$outputdir
+dbrdata     <- argv$dbrdata
 
 # --------- Volcano Plot ------------ #
 no.of.top.genes <- as.numeric(argv$topgenecount)
 toptable.sortby <- "p"
-fold.change   <- as.numeric(argv$foldchange)
+fold.change     <- as.numeric(argv$foldchange)
 threshold.value <- as.numeric(argv$thresholdvalue)
 
 if (file.exists(dbrdata)){
@@ -88,21 +86,21 @@ if (file.exists(dbrdata)){
 }
 
 #############################################################################
-#                       Factor Selection                                 #
+#                       Factor Selection                                    #
 #############################################################################
 
-gene.names      <- as.character(gse@dataTable@table$IDENTIFIER) # Store gene names
-rownames(X)     <- gene.names
-pClass          <- pData(eset)[factor.type]
-colnames(pClass)<- 'factor.type'
-samples         <- rownames(pClass)
+gene.names       <- as.character(gse@dataTable@table$IDENTIFIER) # Store gene names
+rownames(X)      <- gene.names
+pClass           <- pData(eset)[factor.type]
+colnames(pClass) <- 'factor.type'
+samples          <- rownames(pClass)
 
 #############################################################################
 #                        Two Population Preparation                         #
 #############################################################################
 
 # Create a data frame with the factors
-expression.info  <- data.frame(pClass, Sample = samples, row.names = samples)
+expression.info <- data.frame(pClass, Sample = samples, row.names = samples)
 
 
 # Introduce two columns to expression.info -
@@ -131,7 +129,7 @@ newPClass           <- expression.info$population
 names(newPClass)    <- expression.info$Sample
 
 #############################################################################
-#                        Top Table                                    #
+#                        Top Table                                          #
 #############################################################################
 
 find.toptable <- function(X, newPClass, toptable.sortby, no.of.top.genes, gene.names){
