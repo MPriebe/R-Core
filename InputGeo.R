@@ -39,15 +39,15 @@ geodbpath    <- argv$geodbpath
 #############################################################################
 
 # import data sets and process into expression data
-if(is.null(geodbpath)){
-    gse <- getGEO(filename = geodbpath, GSEMatrix = TRUE) # Load data from downloaded file
-}else{
-    gse <- getGEO(accession.id, GSEMatrix = TRUE)         # Automatically Load GEO dataset
+if (is.null(geodbpath)) {
+  gse <- getGEO(accession.id, GSEMatrix = TRUE)         # Automatically Load GEO dataset
+} else {
+  gse <- getGEO(filename = geodbpath, GSEMatrix = TRUE) # Load data from downloaded file
 }
 met  <- Meta(gse)                                         # Extract meta data
 eset <- GDS2eSet(gse, do.log2=TRUE)                       # Convert into ExpressionSet Object
 X    <- exprs(eset)                                       # Get Expression Data
 
-if(is.null(argv$outrdata)){
+if( ! is.null(argv$outrdata)){
     save.image(file = argv$outrdata )
 }
