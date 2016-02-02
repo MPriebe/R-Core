@@ -14,10 +14,14 @@
 #----------------------Loading the data-------------------------------------
 
 
-source("http://bioconductor.org/biocLite.R")
+#source("http://bioconductor.org/biocLite.R")
 #biocLite("GEOquery")
+#biocLite(c("gage","gageData","GO.db", "pathview" ))
 library(GEOquery)
-
+library(gage) #Does the analysis
+library(gageData) #Lets data be used by gage
+library(pathview) #Visualises interaction networks & used to get ENTREZ IDs
+library(GO.db) #Loads GO database
 
 #Importing data from GEO
 gse <- getGEO("GDS5093", GSEMatrix = TRUE)
@@ -38,12 +42,42 @@ pDat <- pData(eset)
 #---------------------------Using the GAGE package------------------------------
 
 
-##Loading gage and associated gene sets
-biocLite(c("gage","gageData","GO.db", "pathview" ))
-library(gage) #Does the analysis
-library(gageData) #Lets data be used by gage
-library(pathview) #Visualises interaction networks & used to get ENTREZ IDs
-#library(GO.db) ##Loads GO database
+
+
+data <- getGEO("GDS5093", GSEMatrix = TRUE)
+X <- Table(data)
+eset <- GDS2eSet(data, do.log2=TRUE)
+pDat <- pData(eset)
+##Remove probe ID column & convert into data matrix
+X1<- X[,-1]
+X1_matrix<-data.matrix(X1)
+id.map.refseq <- id2eg(ids = X$IDENTIFIER, category = "SYMBOL", org = "hsa")
+for (i in 1:length(id.map.refseq[,1])){
+  if (id.map.refseq[i,1] == X1_matrix[i,1]){
+    X1_matrix[i,1]<-id.map.refseq[i,2]
+  }
+}
+X1_matrix<-X1_matrix[complete.cases(X1_matrix),]
+##Make first column rownames
+GEOdataset <- X1_matrix[,-1]
+rownames(GEOdataset) <- X1_matrix[,1]
+##Convert to numerical matrix (for gage function)
+class(GEOdataset) <- "numeric"  
+#Get positions of specific, in vector form
+cn=colnames(GEOdataset)
+##Find out which group each sample is part of
+##Use this to form two groups of samples for further analysis
+Group1<-c()
+Group2<-c()
+for (a in 1:length(pDat$sample)){
+  if (pDat$infection[a] == "Dengue virus"){
+    Group1<-c(Group1, (grep(pDat$sample[a], cn)))
+  }
+  if (pDat$infection[a] == "control"){
+    Group2<- c(Group2, (grep(pDat$sample[a], cn)))
+  }
+}
+
 
 
 
@@ -76,6 +110,31 @@ GEOdataset <- X1_matrix[,-1]
 rownames(GEOdataset) <- X1_matrix[,1]
 ##Convert to numerical matrix (for gage function)
 class(GEOdataset) <- "numeric"  
+cn=colnames(GEOdataset)
+Group1<-c()
+Group2<-c()
+
+for (a in 1:length(pDat$sample)){
+  if (pDat$infection[a] == "Dengue virus"){
+    Group1<-c(Group1, (grep(pDat$sample[a], cn)))
+  }
+  if (pDat$infection[a] == "control"){
+    Group2<- c(Group2, (grep(pDat$sample[a], cn)))
+  }
+}
+
+data(kegg.gs)
+kg.hsa=kegg.gsets("hsa") #this picks out the human sets
+kegg.gs=kg.hsa$kg.sets[kg.hsa$sigmet.idx] #no idea but doesn't seem to work without this step
+save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R object
+##Using the gage function to carry out analysis
+#name           <- gage(data    ,  genesets used, control group, experimental group)
+GEOdataset.kegg.p <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, compare= 'unpaired')
+
+
+
+
+
 
  
 #-------------------Generally Applicable Gene-set Enrichment (GAGE)--------------------
