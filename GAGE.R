@@ -39,7 +39,7 @@ pDat <- pData(eset)
 
 
 ##Loading gage and associated gene sets
-biocLite(c("gage","gageData","GO.db", "pathview" ))
+#biocLite(c("gage","gageData","GO.db", "pathview" ))
 library(gage) #Does the analysis
 library(gageData) #Lets data be used by gage
 library(pathview) #Visualises interaction networks & used to get ENTREZ IDs
@@ -48,6 +48,14 @@ library(pathview) #Visualises interaction networks & used to get ENTREZ IDs
 
 
 #------------------------Data Preparation----------------------------------------
+
+
+##Creating table of organisms IDs
+data(bods)
+bods<-as.data.frame(bods, stringsAsFactors= TRUE )
+latin_names<-c("Anopheles","Arabidopsis thaliana", "Bos taurus", "Caenorhabditis elegans", "Canis lupus familiaris", "Drosophila melanogaster", "Danio rerio", "E coli", "Escherichia coli O157", "Gallus gallus", "Homo sapiens", "Mus musculus", "Macaca mulatta", "Anopheles gambiae", "Pan", "Rattus norvegicus", "Saccharomyces cerevisiae", "Sus scrofa", "Xenopus laevis	") 
+bods2<-cbind(bods, latin_names)
+
 
 
 ##Remove probe ID column & convert into data matrix
@@ -115,28 +123,22 @@ kegg.gs=kg.hsa$kg.sets[kg.hsa$sigmet.idx] #no idea but doesn't seem to work with
 save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R object
 
 
-##Using the gage function to carry out analysis
+##Using the gage function to carry out two-way analysis
 
-
-#name           <- gage(data    ,  genesets used, control group, experimental group)
-GEOdataset.kegg.p <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, compare= 'unpaired')
+GEOdataset.kegg.2d.p <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, same.dir = F, compare='unpaired')
 
 
 
 
 #---------------------Visualisation & Results-------------------------------------
 
-##Producing tables
+#Table for two-analysis (all gene sets)
+write.table(GEOdataset.kegg.2d.p$greater, file = "Test1", sep = "\t")
 
-#Carry out two-analysis (only for Kegg gene sets)
-GEOdataset.kegg.2d.p <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, same.dir = F, compare='unpaired')
-
-#Table for two-analysis
-write.table(GEOdataset.kegg.2d.p$greater, file = "GEOdataset.kegg.2d.p.txt", sep = "\t")
 
 
 #Table show top significant gene sets (for 2 way analysis)
-write.table(GEOdataset.kegg.2d.sig$greater, file = "GEOdataset.kegg.2d.sig.txt", sep = "\t")
+write.table(GEOdataset.kegg.2d.sig$greater, file = "Test2", sep = "\t")
 
 
 
@@ -145,12 +147,16 @@ write.table(GEOdataset.kegg.2d.sig$greater, file = "GEOdataset.kegg.2d.sig.txt",
 #Returns number of up and down regulated gene sets
 GEOdataset.kegg.sig<-sigGeneSet(GEOdataset.kegg.p, outname="GEOdataset.kegg")
 
-##Its heatmap
-sigGeneSet(GEOdataset.kegg.p, outname="GEOdatasetUP.kegg", heatmap= TRUE)
 
 ##Returns number of two-direction enriched gene sets
 GEOdataset.kegg.2d.sig<-sigGeneSet(GEOdataset.kegg.2d.p, outname="GEOdataset.kegg")
-sigGeneSet(GEOdataset.kegg.2d.sig, outname="Two_way", heatmap= TRUE)
+
+
+##Producing the heatmap
+GEOdataset.kegg.2d.sig<-GEOdataset.kegg.2d.sig[,grep("^stats.GSM", names(GEOdataset.kegg.2d.sig), value=TRUE)]
+#install.packages("gplots")
+library(gplots)
+heatmap.2(as.matrix(GEOdataset.kegg.2d.sig[1:20,]), dendrogram = "none", key=T, keysize=1.5, main = "Top 20 Enriched Gene Sets", trace="none", density.info="none")
 
 
 
@@ -165,9 +171,6 @@ path.ids2 <- substr(path.ids, 1, 8)
 
 ##Produces  top 3 interaction networks
 pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
-
-
-
 
 
 ##For down regulated gene pathways
