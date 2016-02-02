@@ -42,16 +42,6 @@ pDat <- pData(eset)
 #---------------------------Using the GAGE package------------------------------
 
 
-<<<<<<< HEAD
-##Loading gage and associated gene sets
-#biocLite(c("gage","gageData","GO.db", "pathview" ))
-library(gage) #Does the analysis
-library(gageData) #Lets data be used by gage
-library(pathview) #Visualises interaction networks & used to get ENTREZ IDs
-#library(GO.db) ##Loads GO database
-=======
-
-
 data <- getGEO("GDS5093", GSEMatrix = TRUE)
 X <- Table(data)
 eset <- GDS2eSet(data, do.log2=TRUE)
@@ -85,8 +75,6 @@ for (a in 1:length(pDat$sample)){
     Group2<- c(Group2, (grep(pDat$sample[a], cn)))
   }
 }
-
->>>>>>> 6d13268ca487e07f8b6e5bca6dcb75311caa05ef
 
 
 
