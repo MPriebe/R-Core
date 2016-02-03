@@ -10,6 +10,13 @@
 #                        Import Libraries                                   #
 #############################################################################
 
+# silent library loading messages on command line
+suppressMessages(library("limma"))
+suppressMessages(library("dendextend"))
+suppressMessages(library("gplots"))
+suppressMessages(library("GEOquery"))
+
+# load required libraries
 library('argparser')    # Argument passing
 library('Cairo')        # Plots saving
 library('dendextend')   # Create dendogram
