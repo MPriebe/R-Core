@@ -181,29 +181,23 @@ kegg.gs=kg.hsa$kg.sets[kg.hsa$sigmet.idx] #no idea but doesn't seem to work with
 save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R object
 
 
+
+#---------------------GAGE results for group 1-------------------------------------
+
 ##Using the gage function to carry out two-way analysis
 
 GEOdataset.kegg.2d.p <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, same.dir = F, compare='unpaired')
 
 
-
-
-#---------------------Visualisation & Results-------------------------------------
-
 #Table for two-analysis (all gene sets)
 write.table(GEOdataset.kegg.2d.p$greater, file = "Test1", sep = "\t")
-
 
 
 #Table show top significant gene sets (for 2 way analysis)
 write.table(GEOdataset.kegg.2d.sig$greater, file = "Test2", sep = "\t")
 
 
-
 ##Producing line summaries
-
-#Returns number of up and down regulated gene sets
-GEOdataset.kegg.sig<-sigGeneSet(GEOdataset.kegg.p, outname="GEOdataset.kegg")
 
 
 ##Returns number of two-direction enriched gene sets
@@ -211,10 +205,12 @@ GEOdataset.kegg.2d.sig<-sigGeneSet(GEOdataset.kegg.2d.p, outname="GEOdataset.keg
 
 
 ##Producing the heatmap
+
+GEOdataset.kegg.2d.sig<-as.data.frame(GEOdataset.kegg.2d.sig)
 GEOdataset.kegg.2d.sig<-GEOdataset.kegg.2d.sig[,grep("^stats.GSM", names(GEOdataset.kegg.2d.sig), value=TRUE)]
 
-heatmap.2(as.matrix(GEOdataset.kegg.2d.sig[1:20,]), dendrogram = "none", key=T, keysize=1.5, main = "Top 20 Enriched Gene Sets", trace="none", density.info="none")
 
+heatmap.2(as.matrix(GEOdataset.kegg.2d.sig[1:20,]), dendrogram = "none", key=T, keysize=1.5, main = "Top 20 Enriched Gene Sets", trace="none", density.info="none", Rowv = FALSE)
 
 
 ##Interaction networks
@@ -240,11 +236,66 @@ pv.out.list2 <- sapply(path.ids4[1:3], function(pid) pathview(gene.data = GEOdat
 
 
 
+#---------------------GAGE results for group 2-------------------------------------
+
+##Using the gage function to carry out two-way analysis
+
+GEOdataset.kegg.2d.p2 <- gage(GEOdataset, gsets = kegg.gs, ref = Group1, samp = Group2, same.dir = F, compare='unpaired')
+
+
+#Table for two-analysis (all gene sets)
+write.table(GEOdataset.kegg.2d.p$greater, file = "Test1", sep = "\t")
+
+
+#Table show top significant gene sets (for 2 way analysis)
+write.table(GEOdataset.kegg.2d.sig$greater, file = "Test2", sep = "\t")
+
+
+##Producing line summaries
+
+##Returns number of two-direction enriched gene sets
+GEOdataset.kegg.2d.sig2<-sigGeneSet(GEOdataset.kegg.2d.p2, outname="GEOdataset.kegg")
+
+
+##Producing the heatmap
+
+GEOdataset.kegg.2d.sig2<-as.data.frame(GEOdataset.kegg.2d.sig2)
+GEOdataset.kegg.2d.sig2<-GEOdataset.kegg.2d.sig2[,grep("^stats.GSM", names(GEOdataset.kegg.2d.sig2), value=TRUE)]
+
+
+heatmap.2(as.matrix(GEOdataset.kegg.2d.sig2[1:20,]), dendrogram = "none", key=T, keysize=1.5, main = "Top 20 Enriched Gene Sets", trace="none", density.info="none", Rowv= FALSE)
+
+
+##Interaction networks
+
+GEOdataset.d<-GEOdataset[, Group1]-rowMeans(GEOdataset[,Group2])
+
+##For upregulated gene pathways
+sel <- GEOdataset.kegg.p$greater[, "q.val"] < 0.1 & !is.na(GEOdataset.kegg.p$greater[, "q.val"])
+path.ids <- rownames(GEOdataset.kegg.p$greater)[sel]
+path.ids2 <- substr(path.ids, 1, 8) 
+
+##Produces  top 3 interaction networks
+pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
+
+
+##For down regulated gene pathways
+sel2 <- GEOdataset.kegg.p$less[, "q.val"] < 0.1 & !is.na(GEOdataset.kegg.p$greater[, "q.val"])
+path.ids3 <- rownames(GEOdataset.kegg.p$greater)[sel]
+path.ids4 <- substr(path.ids, 1, 8) 
+
+##Produces  top 3 interaction networks
+pv.out.list2 <- sapply(path.ids4[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
 
 
 
+#---------------------Working on combined tables-------------------------------------
+
+##Combining tables (haven't yet got row names added)
+
+allsamples<-merge(GEOdataset.kegg.2d.sig,GEOdataset.kegg.2d.sig2, all.x=TRUE)
+View(allsamples)
 
 
 
-
-
+##make a named list or dataframe (for mean values)

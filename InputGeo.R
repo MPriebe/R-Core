@@ -35,7 +35,7 @@ if (is.null(argv$geodbpath)) {
 } else {
   gse <- getGEO(filename = argv$geodbpath, GSEMatrix = TRUE)
 }
-eset <- GDS2eSet(gse, do.log2 = TRUE)
+eset <- GDS2eSet(gse, do.log2 = FALSE)
 
 if (! is.null(argv$outrdata)){
     save.image(file = argv$outrdata )
