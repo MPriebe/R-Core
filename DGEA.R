@@ -35,6 +35,7 @@ parser <- add_argument(parser, "--outputdir", help="The outout directory where g
 parser <- add_argument(parser, "--dbrdata"  , help="Downloaded GEO dataset full path")    
 
 # Sample Parameters
+parser <- add_argument(parser, "--accession"	  , help="Accession Number of the GEO Database")
 parser <- add_argument(parser, "--factor"         , help="Factor type to be classified by")   
 parser <- add_argument(parser, "--popA", nargs='+', help="GroupA - all the selected phenotypes (atleast one)")
 parser <- add_argument(parser, "--popB", nargs='+', help="GroupB - all the selected phenotypes (atleast one)")  
@@ -140,7 +141,17 @@ if (file.exists(dbrdata)){
   eset <- GDS2eSet(gse, do.log2=TRUE)                            # Convert into ExpressionSet Object
 }
 
-X    <- exprs(eset)                                            # Get Expression Data
+X    <- exprs(eset)                                            	 # Get Expression Data
+
+## auto-detect if data needs transformation and log2 transform if needed
+qx <- as.numeric(quantile(X, c(0., 0.25, 0.5, 0.75, 0.99, 1.0), na.rm=T))
+LogC <- (qx[5] > 100) ||
+  (qx[6]-qx[1] > 50 && qx[2] > 0) ||
+  (qx[2] > 0 && qx[2] < 1 && qx[4] > 1 && qx[4] < 2)
+ 
+if (LogC) { X[which(X <= 0)] <- NaN
+            exprs(eset) <- log2(X) }
+
 
 #############################################################################
 #                       Factor Selection                                    #
