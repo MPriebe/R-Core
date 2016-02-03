@@ -1,16 +1,9 @@
 #!/usr/bin/Rsript
 # ---------------------------------------------------------#
-<<<<<<< HEAD
 # Filename      : DGEA.R                                   #
-# Authors       : IsmailM, Nazrath, Suresh, Marian, Anissa #
+# Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
 # Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --outputdir ~/Desktop/
-=======
-# Filename      : DGEA.R 								   #
-# Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa #
-# Description   : Differential Gene Expression Analysis    # 
-# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --outputdir "/Users/sureshhewapathirana/Desktop/"
->>>>>>> 6d13268ca487e07f8b6e5bca6dcb75311caa05ef
 # ---------------------------------------------------------#
 
 #############################################################################
