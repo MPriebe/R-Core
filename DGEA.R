@@ -17,8 +17,8 @@ library('GEOquery')     # GEO dataset Retrieval
 library('ggplot2')      # Graphs designing
 library('gplots')       # Graphs designing
 library('jsonlite')     # Convert R object to JSON format
-library('heatmap3')     # Heatmap Generating
 library('limma')        # Differencial Gene Expression Analysis
+library('pheatmap')     # Heatmap Generating
 library('plyr')         # Splitting, Applying and Combining Data
 library('RColorBrewer') # Import Colour Pallete
 library('reshape2')     # Prepare dataset for ggplot
