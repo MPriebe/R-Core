@@ -209,8 +209,13 @@ GEOdataset.kegg.2d.sig<-sigGeneSet(GEOdataset.kegg.2d.p, outname="GEOdataset.keg
 GEOdataset.kegg.2d.sig<-as.data.frame(GEOdataset.kegg.2d.sig)
 GEOdataset.kegg.2d.sig<-GEOdataset.kegg.2d.sig[,grep("^stats.GSM", names(GEOdataset.kegg.2d.sig), value=TRUE)]
 
-
+#install.packages("gplots")
+library(gplots)
 heatmap.2(as.matrix(GEOdataset.kegg.2d.sig[1:20,]), dendrogram = "none", key=T, keysize=1.5, main = "Top 20 Enriched Gene Sets", trace="none", density.info="none", Rowv = FALSE)
+
+
+heatmap.2(as.matrix(GEOdataset.kegg.2d.sig[1:20,]), dendrogram = "none", key=T, keysize=1.5, main = "Top 20 Enriched Gene Sets", trace="none", density.info="none")
+
 
 
 ##Interaction networks
@@ -263,9 +268,6 @@ GEOdataset.kegg.2d.sig2<-as.data.frame(GEOdataset.kegg.2d.sig2)
 GEOdataset.kegg.2d.sig2<-GEOdataset.kegg.2d.sig2[,grep("^stats.GSM", names(GEOdataset.kegg.2d.sig2), value=TRUE)]
 
 
-heatmap.2(as.matrix(GEOdataset.kegg.2d.sig2[1:20,]), dendrogram = "none", key=T, keysize=1.5, main = "Top 20 Enriched Gene Sets", trace="none", density.info="none", Rowv= FALSE)
-
-
 ##Interaction networks
 
 GEOdataset.d<-GEOdataset[, Group1]-rowMeans(GEOdataset[,Group2])
@@ -293,8 +295,33 @@ pv.out.list2 <- sapply(path.ids4[1:3], function(pid) pathview(gene.data = GEOdat
 
 ##Combining tables (haven't yet got row names added)
 
-allsamples<-merge(GEOdataset.kegg.2d.sig,GEOdataset.kegg.2d.sig2, all.x=TRUE)
-View(allsamples)
+allsamples<-merge(GEOdataset.kegg.2d.sig,GEOdataset.kegg.2d.sig2, by= "row.names", all=FALSE, )
+allsamples2 <- allsamples[,-1]
+rownames(allsamples2) <- allsamples[,1]
+
+
+##Creating a heatmap
+
+#install.packages("pheatmap")
+library(pheatmap)
+#install.packages("RColorBrewer")
+library(RColorBrewer)
+allsamples2<-t(allsamples2)
+row.names(allsamples2)<-gsub("(stats.)", "", row.names(allsamples2))
+col.pal <- RColorBrewer::brewer.pal(9, "Reds")
+annotation_col <- data.frame( Infection = pDat[,2])
+rownames(annotation_col) = pDat[,1]
+
+pheatmap::pheatmap(t(allsamples2), 
+                   cluster_row = T,
+                   cluster_cols = F,
+                   annotation_col = annotation_col,
+                   color = col.pal, 
+                   fontsize = 6.5,
+                   fontsize_row=6, 
+                   fontsize_col = 6,
+                   gaps_col=length(Group1))
+
 
 
 
