@@ -23,8 +23,8 @@ library('dendextend')   # Create dendogram
 library('GEOquery')     # GEO dataset Retrieval
 library('ggplot2')      # Graphs designing
 library('gplots')       # Graphs designing
+library('jsonlite')     # Convert R object to JSON format
 library('heatmap3')     # Heatmap Generating
-library('rjson')        # Convert R object to JSON format
 library('limma')        # Differencial Gene Expression Analysis
 library('plyr')         # Splitting, Applying and Combining Data
 library('RColorBrewer') # Import Colour Pallete
@@ -39,19 +39,20 @@ parser <- arg_parser("This parser contains the input arguments")
 
 # General Parameters
 parser <- add_argument(parser, "--outputdir", help="The outout directory where graphs get saved")
-parser <- add_argument(parser, "--dbrdata"  , help="Downloaded GEO dataset full path")
-
+parser <- add_argument(parser, "--dbrdata", help="Downloaded GEO dataset full path")
+parser <- add_argument(parser, "--analyse", help="List of analysis to be performed",nargs='+')
+    
 # Sample Parameters
-parser <- add_argument(parser, "--accession"	  , help="Accession Number of the GEO Database")
-parser <- add_argument(parser, "--factor"         , help="Factor type to be classified by")   
-parser <- add_argument(parser, "--popA", nargs='+', help="GroupA - all the selected phenotypes (atleast one)")
-parser <- add_argument(parser, "--popB", nargs='+', help="GroupB - all the selected phenotypes (atleast one)")
-parser <- add_argument(parser, "--popname1"       , help="name for GroupA")
-parser <- add_argument(parser, "--popname2"       , help="name for GroupB")
+parser <- add_argument(parser, "--accession", help="Accession Number of the GEO Database")
+parser <- add_argument(parser, "--factor", help="Factor type to be classified by")   
+parser <- add_argument(parser, "--popA", help="GroupA - all the selected phenotypes (atleast one)", nargs='+')
+parser <- add_argument(parser, "--popB", help="GroupB - all the selected phenotypes (atleast one)", nargs='+')
+parser <- add_argument(parser, "--popname1", help="name for GroupA")
+parser <- add_argument(parser, "--popname2", help="name for GroupB")
 
 # Volcano plot Parameters
-parser <- add_argument(parser, "--topgenecount"   , help="number of top genes to be used")
-parser <- add_argument(parser, "--foldchange"     , help="fold change cut off")
+parser <- add_argument(parser, "--foldchange", help="fold change cut off")
+parser <- add_argument(parser, "--topgenecount", help="number of top genes to be used")
 parser <- add_argument(parser, "--thresholdvalue" , help="threshold value cut off")
 
 # Principle Component Parameters
@@ -61,6 +62,12 @@ parser <- add_argument(parser, "--yaxis", help="PC used as y axis")
 # Clustering
 parser <- add_argument(parser, "--distance", help="PC used as x axis")
 parser <- add_argument(parser, "--clustering", help="PC used as y axis")
+
+# Heatmap
+parser <- add_argument(parser, "--heatmaprows", help="Number of genes show in the heatmap")
+parser <- add_argument(parser, "--dendrow", help="Boolean value for display dendogram for Genes")
+parser <- add_argument(parser, "--dendcol", help="Boolean value for display dendogram for Samples")
+
 
 # allow arguments to be run via the command line
 argv   <- parse_args(parser)
@@ -72,6 +79,7 @@ argv   <- parse_args(parser)
 # General Parameters
 output.dir      <- argv$outputdir
 dbrdata         <- argv$dbrdata
+analysis.list   <- unlist(strsplit(argv$analyse, ","))
 
 # Sample Parameters
 factor.type     <- argv$factor
@@ -89,8 +97,8 @@ threshold.value <- as.numeric(argv$thresholdvalue)
 toptable.sortby <- "p"
 
 # Principle Component Parameters
-x.axis          <- argv$xaxis
-y.axis          <- argv$yaxis
+x.axis <- argv$xaxis
+y.axis <- argv$yaxis
 
 # Clustering
 if(argv$distance %in% c("euclidean", "maximum", "manhattan", "canberra", "binary","minkowski")){
@@ -105,6 +113,11 @@ if(argv$clustering %in% c("ward.D", "ward.D2", "single", "complete", "average","
     clust.method <- "average"
 }
 
+# Heatmap
+heatmap.rows <- as.numeric(argv$heatmaprows)
+cv <- argv$dendrow
+rv <- argv$dendcol
+
 # Remove command line argument variables
 remove(parser)
 remove(argv)
@@ -113,27 +126,30 @@ remove(argv)
 #                        Testing                   #
 #############################################################################
 
-# factor.type     <- "disease.state"
-# population1     <- c("Dengue Hemorrhagic Fever","Dengue Fever","Convalescent")
-# population2     <- c("healthy control")
+factor.type     <- "disease.state"
+population1     <- c("Dengue Hemorrhagic Fever","Dengue Fever","Convalescent")
+population2     <- c("healthy control")
 
-# pop.name1       <- "Dengue"
-# pop.name2       <- "Normal"
-# pop.colour1     <- "#b71c1c"  # Red
-# pop.colour2     <- "#0d47a1"  # Blue
+pop.name1       <- "Dengue"
+pop.name2       <- "Normal"
+pop.colour1     <- "#b71c1c"  # Red
+pop.colour2     <- "#0d47a1"  # Blue
 
-# # --------- Volcano Plot ------------ #
-# no.of.top.genes <- 250 #as.numeric(argv$topgenecount)
-# toptable.sortby <- "p"
-# fold.change 	<- 0.3 #as.numeric(argv$foldchange)
-# threshold.value <- 0.05 #as.numeric(argv$thresholdvalue)
-# dbrdata         <-"/Users/sureshhewapathirana/Desktop/GDS5093.rData"
-# output.dir      <-"/Users/sureshhewapathirana/Desktop/"
-# x.axis <- "PC1"
-# y.axis <- "PC2"
-# dist.method <- "euclidean"
-# clust.method <- "average"
-
+# --------- Volcano Plot ------------ #
+no.of.top.genes <- 250 #as.numeric(argv$topgenecount)
+toptable.sortby <- "p"
+fold.change 	<- 0.3 #as.numeric(argv$foldchange)
+threshold.value <- 0.05 #as.numeric(argv$thresholdvalue)
+dbrdata         <-"/Users/sureshhewapathirana/Desktop/GDS5093.rData"
+output.dir      <-"/Users/sureshhewapathirana/Desktop/"
+x.axis <- "PC1"
+y.axis <- "PC2"
+dist.method <- "euclidean"
+clust.method <- "average"
+cv <- "FALSE"
+rv <- "TRUE"
+heatmap.rows <- 100
+analysis.list <- c("Boxplot","Volcano", "PCA","Clustering", "Heatmap")
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
@@ -215,7 +231,7 @@ names(newPClass)    <- expression.info$Sample
 #                        Top Table                                          #
 #############################################################################
 
-find.toptable <- function(X, newPClass, toptable.sortby, no.of.top.genes, gene.names){
+find.toptable <- function(X, newPClass, toptable.sortby, no.of.top.genes){
 
     design  <- model.matrix(~0 + newPClass)
 
@@ -234,8 +250,7 @@ find.toptable <- function(X, newPClass, toptable.sortby, no.of.top.genes, gene.n
     # Create top Table
     toptable <- topTable(fit,
                          sort.by= toptable.sortby, # 'p' or 'LogFC'
-                         number=no.of.top.genes,
-                         genelist = gene.names)
+                         number=no.of.top.genes)
 
     return(toptable)
 }
@@ -252,39 +267,28 @@ samples.boxplot <- function(data){
 }
 
 # Heatmap
-heatmap <- function(X, sample.colours, cv = dend, rv = TRUE){
-    # store Heatmap as PDF file in the working director
-
-    if(nlevels(expression.info[,'factor.type']) < 8){
-        factor.colors <-
-            with(expression.info,
-                 data.frame(factor = levels(expression.info[,'factor.type']),
-                            color = I(brewer.pal(nlevels(expression.info[,'factor.type']), name = 'Dark2'))))
-
-        ColSideColors<-cbind(Populations = sample.colours,
-                             Factor = factor.colors$color)
-    }else{
-        ColSideColors<-cbind(Populations = sample.colours)
-    }
-
-    filename <- paste(output.dir,"Heatmap3.pdf",sep = "")
-    CairoPDF(file = filename)
-
-    heatmap3(X.toptable,
-             na.rm = TRUE,
-             showRowDendro=TRUE,
-             ColSideColors=ColSideColors,
-             col = colorRampPalette(c("red", "yellow", "green"))(n = 299),
-             Colv = dend,
-             cexRow = 1/log10(ncol(X.toptable)) - 0.2,
-             cexCol = 1/log10(ncol(X.toptable)) - 0.1,
-             file = filename)
-
-    legend("topleft", legend = c(pop.name1,pop.name2), horiz = FALSE,
-           col = c(pop.colour1,pop.colour2), lwd = 3, title = "Groups", cex = 0.2 )
-#     legend("topright", legend = levels(expression.info[,'factor.type']), horiz = FALSE,
-#            col = factor.colors$color, lwd = 3, title = "Factors", cex = 0.2 )
-
+heatmap <- function(X, heatmap.rows = 100, cv = FALSE, rv = TRUE){
+    
+    #col.pal <- colorRampPalette(c("red","yellow","green"))(n=299)
+    
+    col.pal <- colorRampPalette(rev(brewer.pal(11, 'RdYlGn')))(100)
+    
+    annotation_col <- data.frame( Factor = expression.info[,'factor.type'], 
+                                  Population = expression.info[,'population'])
+    rownames(annotation_col) = expression.info[,'Sample']
+ 
+    filename <- paste(output.dir,"Heatmap.svg",sep = "")
+    CairoSVG(file = filename)
+    
+    pheatmap::pheatmap(X.toptable[1:100,], 
+                       cluster_row = TRUE,
+                       cluster_cols = FALSE,
+                       annotation_col = annotation_col,
+                       color = col.pal, 
+                       fontsize = 6.5,
+                       fontsize_row=4, 
+                       fontsize_col = 3.5,
+                       gaps_col=length((which(annotation_col[,'Population'] == 'Group1')== TRUE)))
     dev.off()
 }
 
@@ -294,6 +298,14 @@ clustering <- function(dist.method = "euclidean", clust.method = "average"){
     hc <- hclust(dist(t(X), method = dist.method), method = clust.method)
     dend <- as.dendrogram(hc)
     labels_colors(dend) <- expression.info$population.colour[order.dendrogram(dend)]
+    
+    filename <- paste(output.dir,"clustering.png",sep = "")
+    CairoPNG(file = filename, width = 800, height = 800, xlab = "Samples")
+    plot(dend)
+    legend("topright", legend = c(pop.name1,pop.name2), horiz = FALSE,
+        col = c(pop.colour1,pop.colour2), lwd = 3, title = "Groups")
+    dev.off()
+    
     return(dend)
 }
 
@@ -358,14 +370,15 @@ pc.scatterplot <- function(Xpca, x.axis = "PC1", y.axis = "PC2"){
 #############################################################################
 
 json.list <- list()
-analysis.list <- c("Boxplot","Toptable","Volcano", "PCA","Heatmap")
 
 # Toptable
-toptable    <- find.toptable(X, newPClass, toptable.sortby, no.of.top.genes, gene.names)
+toptable    <- find.toptable(X, newPClass, toptable.sortby, no.of.top.genes)
 #Create Sub Data
 X.toptable <-X[toptable$ID,names(newPClass)]
-toptable.all <- find.toptable(X, newPClass, toptable.sortby, length(gene.names) , gene.names)
-json.list<- append(json.list,list(topgenes = toptable))
+toptable.all <- find.toptable(X, newPClass, toptable.sortby, length(gene.names))
+temp.toptable <- toptable
+names(temp.toptable) <- NULL
+json.list<- append(json.list,list(toptable = temp.toptable))
 
 if ("Boxplot" %in% analysis.list){
     samples.boxplot(data)
@@ -392,13 +405,21 @@ if ("PCA" %in% analysis.list){
     json.list<- append(json.list, list(pcplot = pcplotdata))
 }
 
+if ("Clustering" %in% analysis.list){
+    clustering(dist.method, clust.method)
+}
+
 if ("Heatmap" %in% analysis.list){
     dend <- clustering(dist.method, clust.method)
-    heatmap(X.toptable,expression.info$population.colour, cv = dend)
+    heatmap(X.toptable, heatmap.rows = 100, rv = "TRUE", cv = "TRUE")
 }
 
 if(length(json.list) != 0){
     filename <- paste(output.dir,"data.json",sep = "")
     write(toJSON(json.list), filename)
 }
+
+#if (! is.null(argv$outrdata)){
+    save.image(file = argv$outrdata )
+#}
 
