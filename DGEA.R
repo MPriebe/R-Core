@@ -11,8 +11,8 @@
 #############################################################################
 
 library('argparser')    # Argument passing
-library('Cairo')        # Plots saving 
-library('dendextend')   # Create dendogram 
+library('Cairo')        # Plots saving
+library('dendextend')   # Create dendogram
 library('GEOquery')     # GEO dataset Retrieval
 library('ggplot2')      # Graphs designing
 library('gplots')       # Graphs designing
@@ -31,28 +31,28 @@ library('reshape2')     # Prepare dataset for ggplot
 parser <- arg_parser("This parser contains the input arguments")
 
 # General Parameters
-parser <- add_argument(parser, "--outputdir", help="The outout directory where graphs get saved")    
-parser <- add_argument(parser, "--dbrdata"  , help="Downloaded GEO dataset full path")    
+parser <- add_argument(parser, "--outputdir", help="The outout directory where graphs get saved")
+parser <- add_argument(parser, "--dbrdata"  , help="Downloaded GEO dataset full path")
 
 # Sample Parameters
 parser <- add_argument(parser, "--accession"	  , help="Accession Number of the GEO Database")
 parser <- add_argument(parser, "--factor"         , help="Factor type to be classified by")   
 parser <- add_argument(parser, "--popA", nargs='+', help="GroupA - all the selected phenotypes (atleast one)")
-parser <- add_argument(parser, "--popB", nargs='+', help="GroupB - all the selected phenotypes (atleast one)")  
-parser <- add_argument(parser, "--popname1"       , help="name for GroupA")   
+parser <- add_argument(parser, "--popB", nargs='+', help="GroupB - all the selected phenotypes (atleast one)")
+parser <- add_argument(parser, "--popname1"       , help="name for GroupA")
 parser <- add_argument(parser, "--popname2"       , help="name for GroupB")
 
 # Volcano plot Parameters
-parser <- add_argument(parser, "--topgenecount"   , help="number of top genes to be used")   
-parser <- add_argument(parser, "--foldchange"     , help="fold change cut off")    
-parser <- add_argument(parser, "--thresholdvalue" , help="threshold value cut off")    
+parser <- add_argument(parser, "--topgenecount"   , help="number of top genes to be used")
+parser <- add_argument(parser, "--foldchange"     , help="fold change cut off")
+parser <- add_argument(parser, "--thresholdvalue" , help="threshold value cut off")
 
 # Principle Component Parameters
-parser <- add_argument(parser, "--xaxis", help="PC used as x axis")  
+parser <- add_argument(parser, "--xaxis", help="PC used as x axis")
 parser <- add_argument(parser, "--yaxis", help="PC used as y axis")
 
 # Clustering
-parser <- add_argument(parser, "--distance", help="PC used as x axis")  
+parser <- add_argument(parser, "--distance", help="PC used as x axis")
 parser <- add_argument(parser, "--clustering", help="PC used as y axis")
 
 # allow arguments to be run via the command line
@@ -67,19 +67,19 @@ output.dir      <- argv$outputdir
 dbrdata         <- argv$dbrdata
 
 # Sample Parameters
-factor.type     <- argv$factor           
-population1     <- unlist(strsplit(argv$popA, ",")) 
-population2     <- unlist(strsplit(argv$popB, ",")) 
-pop.name1       <- argv$popname1         
-pop.name2       <- argv$popname2        
-pop.colour1     <- "#b71c1c"  # Red  
-pop.colour2     <- "#0d47a1"  # Blue 
+factor.type     <- argv$factor
+population1     <- unlist(strsplit(argv$popA, ","))
+population2     <- unlist(strsplit(argv$popB, ","))
+pop.name1       <- argv$popname1
+pop.name2       <- argv$popname2
+pop.colour1     <- "#b71c1c"  # Red
+pop.colour2     <- "#0d47a1"  # Blue
 
 # Volcano plot Parameters
-no.of.top.genes <- as.numeric(argv$topgenecount)  
-fold.change 	<- as.numeric(argv$foldchange)       
+no.of.top.genes <- as.numeric(argv$topgenecount)
+fold.change     <- as.numeric(argv$foldchange)
 threshold.value <- as.numeric(argv$thresholdvalue)
-toptable.sortby <- "p" 
+toptable.sortby <- "p"
 
 # Principle Component Parameters
 x.axis          <- argv$xaxis
@@ -106,24 +106,26 @@ remove(argv)
 #                        Testing                   #
 #############################################################################
 
-factor.type     <- "disease.state"           
-population1     <- c("Dengue Hemorrhagic Fever","Dengue Fever","Convalescent") 
-population2     <- c("healthy control") 
+# factor.type     <- "disease.state"
+# population1     <- c("Dengue Hemorrhagic Fever","Dengue Fever","Convalescent")
+# population2     <- c("healthy control")
 
-pop.name1       <- "Dengue"         
-pop.name2       <- "Normal"       
-pop.colour1     <- "#b71c1c"  # Red  
-pop.colour2     <- "#0d47a1"  # Blue 
+# pop.name1       <- "Dengue"
+# pop.name2       <- "Normal"
+# pop.colour1     <- "#b71c1c"  # Red
+# pop.colour2     <- "#0d47a1"  # Blue
 
 # # --------- Volcano Plot ------------ #
-no.of.top.genes <- 250 #as.numeric(argv$topgenecount)  
-toptable.sortby <- "p"                 				
-fold.change 	<- 0.3 #as.numeric(argv$foldchange)       
-threshold.value <- 0.05 #as.numeric(argv$thresholdvalue)   
-dbrdata         <-"/Users/sureshhewapathirana/Desktop/GDS5093.rData"
-output.dir      <-"/Users/sureshhewapathirana/Desktop/"
-x.axis <- "PC1"
-y.axis <- "PC2"
+# no.of.top.genes <- 250 #as.numeric(argv$topgenecount)
+# toptable.sortby <- "p"
+# fold.change 	<- 0.3 #as.numeric(argv$foldchange)
+# threshold.value <- 0.05 #as.numeric(argv$thresholdvalue)
+# dbrdata         <-"/Users/sureshhewapathirana/Desktop/GDS5093.rData"
+# output.dir      <-"/Users/sureshhewapathirana/Desktop/"
+# x.axis <- "PC1"
+# y.axis <- "PC2"
+# dist.method <- "euclidean"
+# clust.method <- "average"
 
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
@@ -158,12 +160,12 @@ if (LogC) { X[which(X <= 0)] <- NaN
 #############################################################################
 
 # Store gene names
-X       <- exprs(eset)                      
-gene.names      <- as.character(gse@dataTable@table$IDENTIFIER) 
-rownames(X)     <- gene.names 
+X       <- exprs(eset)
+gene.names      <- as.character(gse@dataTable@table$IDENTIFIER)
+rownames(X)     <- gene.names
 
 # Phenotype Selection
-pClass          <- pData(eset)[factor.type] 
+pClass          <- pData(eset)[factor.type]
 colnames(pClass)<- 'factor.type'
 
 #############################################################################
@@ -171,8 +173,8 @@ colnames(pClass)<- 'factor.type'
 #############################################################################
 
 # Create a data frame with the factors
-expression.info  <- data.frame(pClass, 
-                               Sample = rownames(pClass), 
+expression.info  <- data.frame(pClass,
+                               Sample = rownames(pClass),
                                row.names = rownames(pClass))
 
 # Introduce two columns to expression.info -
@@ -212,7 +214,7 @@ find.toptable <- function(X, newPClass, toptable.sortby, no.of.top.genes, gene.n
 
     # plots linear model for each gene and estimate fold changes and standard errors
     fit     <- lmFit(X, design)
-    
+
     # set contrasts for two groups
     contrasts <- makeContrasts(contrasts="newPClassGroup1-newPClassGroup2",
                                levels = design)
@@ -221,11 +223,11 @@ find.toptable <- function(X, newPClass, toptable.sortby, no.of.top.genes, gene.n
 
     # empirical Bayes smoothing to standard errors
     fit <- eBayes(fit)
-    
+
     # Create top Table
-    toptable <- topTable(fit, 
+    toptable <- topTable(fit,
                          sort.by= toptable.sortby, # 'p' or 'LogFC'
-                         number=no.of.top.genes, 
+                         number=no.of.top.genes,
                          genelist = gene.names)
 
     return(toptable)
@@ -250,27 +252,27 @@ heatmap <- function(X, sample.colours, cv = dend, rv = TRUE){
         factor.colors <-
             with(expression.info,
                  data.frame(factor = levels(expression.info[,'factor.type']),
-                            color = I(brewer.pal(nlevels(expression.info[,'factor.type']), name = 'Dark2')))) 
-        
+                            color = I(brewer.pal(nlevels(expression.info[,'factor.type']), name = 'Dark2'))))
+
         ColSideColors<-cbind(Populations = sample.colours,
                              Factor = factor.colors$color)
     }else{
         ColSideColors<-cbind(Populations = sample.colours)
     }
-    
+
     filename <- paste(output.dir,"Heatmap3.pdf",sep = "")
     CairoPDF(file = filename)
-    
+
     heatmap3(X.toptable,
              na.rm = TRUE,
              showRowDendro=TRUE,
              ColSideColors=ColSideColors,
-             col = colorRampPalette(c("red", "yellow", "green"))(n = 299),        
+             col = colorRampPalette(c("red", "yellow", "green"))(n = 299),
              Colv = dend,
              cexRow = 1/log10(ncol(X.toptable)) - 0.2,
              cexCol = 1/log10(ncol(X.toptable)) - 0.1,
              file = filename)
-    
+
     legend("topleft", legend = c(pop.name1,pop.name2), horiz = FALSE,
            col = c(pop.colour1,pop.colour2), lwd = 3, title = "Groups", cex = 0.2 )
 #     legend("topright", legend = levels(expression.info[,'factor.type']), horiz = FALSE,
@@ -278,11 +280,11 @@ heatmap <- function(X, sample.colours, cv = dend, rv = TRUE){
 
     dev.off()
 }
-    
+
 # Clustering dendogram
 clustering <- function(dist.method = "euclidean", clust.method = "average"){
 
-    hc <- hclust(dist(t(X), method = dist.method), method = clust.method) 
+    hc <- hclust(dist(t(X), method = dist.method), method = clust.method)
     dend <- as.dendrogram(hc)
     labels_colors(dend) <- expression.info$population.colour[order.dendrogram(dend)]
     return(dend)
@@ -310,21 +312,21 @@ get.vol.data <- function(toptable){
 
 # Principal Component Analysis
 get.pc.data <- function(Xpca){
-    
+
     s <- summary(Xpca)
-    
+
     # Individual contribution of each princle component in percentages
-    expVar <- s$importance[2,] * 100 
-    
+    expVar <- s$importance[2,] * 100
+
     # Cumulative Variance in percentages
     cumVar <- s$importance[3,] * 100
-    
+
     # PC names
     pcnames <-names(expVar)
 
     names(expVar) <- NULL
     names(cumVar) <- NULL
-    
+
     results <- list(pcnames = pcnames,
                     expVar = expVar,
                     cumVar = cumVar)
@@ -333,14 +335,14 @@ get.pc.data <- function(Xpca){
 }
 
 pc.scatterplot <- function(Xpca, x.axis = "PC1", y.axis = "PC2"){
-    
+
     Xscores <- Xpca$x
 
     pcplot <- list(pcx = round(Xscores[,x.axis],3),
                    pcy = round(Xscores[,y.axis],3))
     names(pcplot$pcx) <- NULL
     names(pcplot$pcy) <- NULL
-    
+
     return(pcplot)
 }
 
@@ -359,7 +361,7 @@ toptable.all <- find.toptable(X, newPClass, toptable.sortby, length(gene.names) 
 json.list<- append(json.list,list(topgenes = toptable))
 
 if ("Boxplot" %in% analysis.list){
-    samples.boxplot(data)       
+    samples.boxplot(data)
 }
 
 if ("Volcano" %in% analysis.list){
@@ -369,16 +371,16 @@ if ("Volcano" %in% analysis.list){
 }
 
 if ("PCA" %in% analysis.list){
-    
+
     Xpca <- prcomp(t(X.toptable), scale= TRUE)
-    
+
     # PC individual and cumulative values
     pcdata <- get.pc.data(Xpca)
     json.list<- append(json.list, list(pc = pcdata))
-    
+
     # PC scatter plot
     pcplotdata <- pc.scatterplot(Xpca, x.axis, y.axis)
-    
+
     # adding both data to the json list
     json.list<- append(json.list, list(pcplot = pcplotdata))
 }
