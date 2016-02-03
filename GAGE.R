@@ -186,35 +186,27 @@ save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R 
 
 ##Using the gage function to carry out two-way analysis
 
-GEOdataset.kegg.2d.p <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, same.dir = F, compare='unpaired')
+keggresults_group1 <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, same.dir = F, compare='unpaired')
 
 
 #Table for two-analysis (all gene sets)
-write.table(GEOdataset.kegg.2d.p$greater, file = "Test1", sep = "\t")
+write.table(keggresults_group1$greater, file = "All_group1", sep = "\t")
 
 
 #Table show top significant gene sets (for 2 way analysis)
-write.table(GEOdataset.kegg.2d.sig$greater, file = "Test2", sep = "\t")
+write.table(keggresults_group1$greater, file = "Sig_group1", sep = "\t")
 
 
 ##Producing line summaries
 
 
-##Returns number of two-direction enriched gene sets
-GEOdataset.kegg.2d.sig<-sigGeneSet(GEOdataset.kegg.2d.p, outname="GEOdataset.kegg")
+##Returns number of two-direction significantly enriched gene sets
+keggresults_group1_sig<-sigGeneSet(keggresults_group1)
 
+##Formatting and preparation for heatmap
 
-##Producing the heatmap
-
-GEOdataset.kegg.2d.sig<-as.data.frame(GEOdataset.kegg.2d.sig)
-GEOdataset.kegg.2d.sig<-GEOdataset.kegg.2d.sig[,grep("^stats.GSM", names(GEOdataset.kegg.2d.sig), value=TRUE)]
-
-#install.packages("gplots")
-library(gplots)
-heatmap.2(as.matrix(GEOdataset.kegg.2d.sig[1:20,]), dendrogram = "none", key=T, keysize=1.5, main = "Top 20 Enriched Gene Sets", trace="none", density.info="none", Rowv = FALSE)
-
-
-heatmap.2(as.matrix(GEOdataset.kegg.2d.sig[1:20,]), dendrogram = "none", key=T, keysize=1.5, main = "Top 20 Enriched Gene Sets", trace="none", density.info="none")
+keggresults_group1_sig<-as.data.frame(keggresults_group1_sig)
+keggresults_group1_stats<-keggresults_group1_sig[,grep("^stats.GSM", names(keggresults_group1_sig), value=TRUE)]
 
 
 
@@ -223,71 +215,54 @@ heatmap.2(as.matrix(GEOdataset.kegg.2d.sig[1:20,]), dendrogram = "none", key=T, 
 GEOdataset.d<-GEOdataset[, Group1]-rowMeans(GEOdataset[,Group2])
 
 ##For upregulated gene pathways
-sel <- GEOdataset.kegg.p$greater[, "q.val"] < 0.1 & !is.na(GEOdataset.kegg.p$greater[, "q.val"])
-path.ids <- rownames(GEOdataset.kegg.p$greater)[sel]
+sel <- keggresults_group1$greater[, "q.val"] < 0.1 & !is.na(keggresults_group1$greater[, "q.val"])
+path.ids <- rownames(keggresults_group1$greater)[sel]
 path.ids2 <- substr(path.ids, 1, 8) 
 
-##Produces  top 3 interaction networks
+##Produces  top 3 interaction networks (from 2 way analysis)
 pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
-
-
-##For down regulated gene pathways
-sel2 <- GEOdataset.kegg.p$less[, "q.val"] < 0.1 & !is.na(GEOdataset.kegg.p$greater[, "q.val"])
-path.ids3 <- rownames(GEOdataset.kegg.p$greater)[sel]
-path.ids4 <- substr(path.ids, 1, 8) 
-
-##Produces  top 3 interaction networks
-pv.out.list2 <- sapply(path.ids4[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
-
 
 
 #---------------------GAGE results for group 2-------------------------------------
 
 ##Using the gage function to carry out two-way analysis
 
-GEOdataset.kegg.2d.p2 <- gage(GEOdataset, gsets = kegg.gs, ref = Group1, samp = Group2, same.dir = F, compare='unpaired')
+keggresults_group2 <- gage(GEOdataset, gsets = kegg.gs, ref = Group1, samp = Group2, same.dir = F, compare='unpaired')
 
 
 #Table for two-analysis (all gene sets)
-write.table(GEOdataset.kegg.2d.p$greater, file = "Test1", sep = "\t")
+write.table(keggresults_group2$greater, file = "All_group2", sep = "\t")
 
 
 #Table show top significant gene sets (for 2 way analysis)
-write.table(GEOdataset.kegg.2d.sig$greater, file = "Test2", sep = "\t")
+write.table(keggresults_group2$greater, file = "Sig_group2", sep = "\t")
 
 
 ##Producing line summaries
 
-##Returns number of two-direction enriched gene sets
-GEOdataset.kegg.2d.sig2<-sigGeneSet(GEOdataset.kegg.2d.p2, outname="GEOdataset.kegg")
 
+##Returns number of two-direction significantly enriched gene sets
+keggresults_group2_sig<-sigGeneSet(keggresults_group2)
 
-##Producing the heatmap
+##Formatting and preparation for heatmap
 
-GEOdataset.kegg.2d.sig2<-as.data.frame(GEOdataset.kegg.2d.sig2)
-GEOdataset.kegg.2d.sig2<-GEOdataset.kegg.2d.sig2[,grep("^stats.GSM", names(GEOdataset.kegg.2d.sig2), value=TRUE)]
+keggresults_group2_sig<-as.data.frame(keggresults_group2_sig)
+keggresults_group2_stats<-keggresults_group2_sig[,grep("^stats.GSM", names(keggresults_group2_sig), value=TRUE)]
 
 
 ##Interaction networks
 
-GEOdataset.d<-GEOdataset[, Group1]-rowMeans(GEOdataset[,Group2])
+GEOdataset.d2<-GEOdataset[, Group2]-rowMeans(GEOdataset[,Group1])
 
 ##For upregulated gene pathways
-sel <- GEOdataset.kegg.p$greater[, "q.val"] < 0.1 & !is.na(GEOdataset.kegg.p$greater[, "q.val"])
-path.ids <- rownames(GEOdataset.kegg.p$greater)[sel]
-path.ids2 <- substr(path.ids, 1, 8) 
-
-##Produces  top 3 interaction networks
-pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
-
-
-##For down regulated gene pathways
-sel2 <- GEOdataset.kegg.p$less[, "q.val"] < 0.1 & !is.na(GEOdataset.kegg.p$greater[, "q.val"])
-path.ids3 <- rownames(GEOdataset.kegg.p$greater)[sel]
+sel2 <- keggresults_group2$greater[, "q.val"] < 0.1 & !is.na(keggresults_group1$greater[, "q.val"])
+path.ids3 <- rownames(keggresults_group1$greater)[sel]
 path.ids4 <- substr(path.ids, 1, 8) 
 
-##Produces  top 3 interaction networks
-pv.out.list2 <- sapply(path.ids4[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
+##Produces  top 3 interaction networks (from 2 way analysis)
+pv.out.list2 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d2[,1:2], pathway.id = pid, species = "hsa"))
+
+
 
 
 
@@ -295,7 +270,7 @@ pv.out.list2 <- sapply(path.ids4[1:3], function(pid) pathview(gene.data = GEOdat
 
 ##Combining tables (haven't yet got row names added)
 
-allsamples<-merge(GEOdataset.kegg.2d.sig,GEOdataset.kegg.2d.sig2, by= "row.names", all=FALSE, )
+allsamples<-merge(keggresults_group1_stats,keggresults_group2_stats, by= "row.names", all=FALSE)
 allsamples2 <- allsamples[,-1]
 rownames(allsamples2) <- allsamples[,1]
 
