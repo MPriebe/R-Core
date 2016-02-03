@@ -189,14 +189,6 @@ save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R 
 keggresults_group1 <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, same.dir = F, compare='unpaired')
 
 
-#Table for two-analysis (all gene sets)
-write.table(keggresults_group1$greater, file = "All_group1", sep = "\t")
-
-
-#Table show top significant gene sets (for 2 way analysis)
-write.table(keggresults_group1$greater, file = "Sig_group1", sep = "\t")
-
-
 ##Producing line summaries
 
 
@@ -222,6 +214,13 @@ path.ids2 <- substr(path.ids, 1, 8)
 ##Produces  top 3 interaction networks (from 2 way analysis)
 pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
 
+##Results table
+
+Group1_results<-keggresults_group1$greater
+
+##Remove gene sets without zero enrichments
+Group1_results<-Group1_results[complete.cases(Group1_results),]
+
 
 #---------------------GAGE results for group 2-------------------------------------
 
@@ -229,20 +228,9 @@ pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdata
 
 keggresults_group2 <- gage(GEOdataset, gsets = kegg.gs, ref = Group1, samp = Group2, same.dir = F, compare='unpaired')
 
-
-#Table for two-analysis (all gene sets)
-write.table(keggresults_group2$greater, file = "All_group2", sep = "\t")
-
-
-#Table show top significant gene sets (for 2 way analysis)
-write.table(keggresults_group2$greater, file = "Sig_group2", sep = "\t")
-
-
-##Producing line summaries
-
-
 ##Returns number of two-direction significantly enriched gene sets
 keggresults_group2_sig<-sigGeneSet(keggresults_group2)
+
 
 ##Formatting and preparation for heatmap
 
@@ -263,12 +251,19 @@ path.ids4 <- substr(path.ids, 1, 8)
 pv.out.list2 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d2[,1:2], pathway.id = pid, species = "hsa"))
 
 
+##Results table
+
+Group2_results<-keggresults_group2$greater
+
+##Remove gene sets without zero enrichments
+Group2_results<-Group2_results[complete.cases(Group2_results),]
 
 
 
-#---------------------Working on combined tables-------------------------------------
 
-##Combining tables (haven't yet got row names added)
+#---------------------Making the heatmap-------------------------------------
+
+##Combining tables 
 
 allsamples<-merge(keggresults_group1_stats,keggresults_group2_stats, by= "row.names", all=FALSE)
 allsamples2 <- allsamples[,-1]
@@ -296,6 +291,7 @@ pheatmap::pheatmap(t(allsamples2),
                    fontsize_row=6, 
                    fontsize_col = 6,
                    gaps_col=length(Group1))
+
 
 
 
