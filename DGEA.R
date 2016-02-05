@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata "~/Desktop/GDS5093.rData" --outputdir "/Users/sureshhewapathirana/Desktop/" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap"
+# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata "~/Desktop/GDS5093.rData" --outputdir "/Users/sureshhewapathirana/Desktop/" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap" --expsavepath ~/Desktop/topexpr.rData
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -14,6 +14,7 @@
 suppressMessages(library("limma"))
 suppressMessages(library("gplots"))
 suppressMessages(library("GEOquery"))
+suppressMessages(library('pheatmap'))
 
 # load required libraries
 library('argparser')    # Argument passing
@@ -42,6 +43,7 @@ parser <- add_argument(parser, "--outputdir", help="The outout directory where g
 parser <- add_argument(parser, "--dbrdata", help="Downloaded GEO dataset full path")
 parser <- add_argument(parser, "--analyse", help="List of analysis to be performed",nargs='+')
 parser <- add_argument(parser, "--geodbpath", help = "GEO Dataset full path")
+parser <- add_argument(parser, "--expsavepath", help = "Toptable Expression data saving full path")
 
 # Sample Parameters
 parser <- add_argument(parser, "--accession", help="Accession Number of the GEO Database")
@@ -136,8 +138,10 @@ LogC <- (qx[5] > 100) ||
     (qx[6]-qx[1] > 50 && qx[2] > 0) ||
     (qx[2] > 0 && qx[2] < 1 && qx[4] > 1 && qx[4] < 2)
 
-if (LogC) { X[which(X <= 0)] <- NaN
-exprs(eset) <- log2(X) }
+if (LogC) { 
+    X[which(X <= 0)] <- NaN
+    exprs(eset) <- log2(X)
+}
 
 
 #############################################################################
@@ -349,6 +353,11 @@ json.list<- append(json.list,list(tops = temp.toptable))
 
 # Filter toptable data from X
 X.toptable <-X[as.numeric(rownames(toptable)),]
+
+# save toptable expression data
+if (! is.na(argv$expsavepath)){
+    save(X.toptable, expression.info, file = argv$expsavepath )
+}
 
 if ("Boxplot" %in% analysis.list){
     samples.boxplot(data, c(pop.colour1,pop.colour2), c(pop.name1,pop.name2), path = output.dir)
