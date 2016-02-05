@@ -120,34 +120,6 @@ remove(parser)
 remove(argv)
 
 #############################################################################
-#                        Testing                   #
-#############################################################################
-
-# factor.type     <- "disease.state"
-# population1     <- c("Dengue Hemorrhagic Fever","Dengue Fever","Convalescent")
-# population2     <- c("healthy control")
-# 
-# pop.name1       <- "Dengue"
-# pop.name2       <- "Normal"
-# pop.colour1     <- "#b71c1c"  # Red
-# pop.colour2     <- "#0d47a1"  # Blue
-# 
-# # --------- Volcano Plot ------------ #
-# no.of.top.genes <- 250 #as.numeric(argv$topgenecount)
-# toptable.sortby <- "p"
-# fold.change 	<- 0.3 #as.numeric(argv$foldchange)
-# threshold.value <- 0.05 #as.numeric(argv$thresholdvalue)
-# dbrdata         <-"/Users/sureshhewapathirana/Desktop/GDS5093.rData"
-# output.dir      <-"/Users/sureshhewapathirana/Desktop/"
-# x.axis <- "PC1"
-# y.axis <- "PC2"
-# dist.method <- "euclidean"
-# clust.method <- "average"
-# cv <- TRUE
-# rv <- TRUE
-# heatmap.rows <- 100
-# analysis.list <- c("Boxplot","Volcano", "PCA","Clustering", "Heatmap")
-#############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
 
