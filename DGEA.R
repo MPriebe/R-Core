@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --xaxis "PC1" --yaxis "PC2" --distance "euclidean" --clustering "average" --dbrdata "~/Desktop/GDS5093.rData" --outputdir "/Users/sureshhewapathirana/Desktop/" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap"
+# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata "~/Desktop/GDS5093.rData" --outputdir "/Users/sureshhewapathirana/Desktop/" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap"
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -41,6 +41,7 @@ parser <- arg_parser("This parser contains the input arguments")
 parser <- add_argument(parser, "--outputdir", help="The outout directory where graphs get saved")
 parser <- add_argument(parser, "--dbrdata", help="Downloaded GEO dataset full path")
 parser <- add_argument(parser, "--analyse", help="List of analysis to be performed",nargs='+')
+parser <- add_argument(parser, "--geodbpath", help = "GEO Dataset full path")
 
 # Sample Parameters
 parser <- add_argument(parser, "--accession", help="Accession Number of the GEO Database")
@@ -55,16 +56,12 @@ parser <- add_argument(parser, "--foldchange", help="fold change cut off")
 parser <- add_argument(parser, "--topgenecount", help="number of top genes to be used")
 parser <- add_argument(parser, "--thresholdvalue" , help="threshold value cut off")
 
-# Principle Component Parameters
-parser <- add_argument(parser, "--xaxis", help="PC used as x axis")
-parser <- add_argument(parser, "--yaxis", help="PC used as y axis")
-
 # Heatmap
 parser <- add_argument(parser, "--heatmaprows", help="Number of genes show in the heatmap")
 parser <- add_argument(parser, "--dendrow", help="Boolean value for display dendogram for Genes")
 parser <- add_argument(parser, "--dendcol", help="Boolean value for display dendogram for Samples")
-parser <- add_argument(parser, "--distance", help="PC used as x axis")
-parser <- add_argument(parser, "--clustering", help="PC used as y axis")
+parser <- add_argument(parser, "--distance", help="Distance measurement methods")
+parser <- add_argument(parser, "--clustering", help="HCA clustering methods")
 
 # allow arguments to be run via the command line
 argv   <- parse_args(parser)
@@ -93,10 +90,6 @@ fold.change     <- as.numeric(argv$foldchange)
 threshold.value <- as.numeric(argv$thresholdvalue)
 toptable.sortby <- "p"
 
-# Principle Component Parameters
-x.axis <- argv$xaxis
-y.axis <- argv$yaxis
-
 # Clustering
 if(argv$distance %in% c("euclidean", "maximum", "manhattan", "canberra", "binary","minkowski")){
     dist.method <- argv$distance
@@ -116,8 +109,8 @@ cv <- as.logical(argv$dendrow)
 rv <- as.logical(argv$dendcol)
 
 # Remove command line argument variables
-remove(parser)
-remove(argv)
+#remove(parser)
+#remove(argv)
 
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
@@ -239,8 +232,6 @@ samples.boxplot <- function(data, pop.colours, pop.names, path){
 heatmap <- function(X.matix, heatmap.rows = 100, cv = TRUE, rv = TRUE, dist.method, clust.method, path){
     X.matix<-X.toptable
     col.pal <- colorRampPalette(rev(brewer.pal(11, 'RdYlGn')))(100)
-#     palette <- colorRampPalette(c("white","red"))(100)
-#     outlier.colours <- palette[cut(outliers, 100)]
     
     # Column dendogram
     if(cv == TRUE){
@@ -269,7 +260,6 @@ heatmap <- function(X.matix, heatmap.rows = 100, cv = TRUE, rv = TRUE, dist.meth
     }
     
     rownames(annotation_col) = expression.info[,'Sample']
-    #anno_colors = list(Outliers = outlier.colours)
     
     filename <- paste(path,"heatmap.svg",sep = "")
     CairoSVG(file = filename)
@@ -304,9 +294,10 @@ volcanoplot <- function(toptable, fold.change, t = 0.05/length(gene.names), path
 }
 
 get.vol.data <- function(toptable){
+    
     vol.list <- list( genes = toptable$ID,
                       logFC = round(toptable$logFC, 3),
-                      pVal  = round(-log10(toptable$P.Value), 3) )
+                      pVal  = -log10(toptable$P.Value))
     return(vol.list)
 }
 
