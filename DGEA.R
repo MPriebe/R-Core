@@ -12,14 +12,12 @@
 
 # silent library loading messages on command line
 suppressMessages(library("limma"))
-suppressMessages(library("dendextend"))
 suppressMessages(library("gplots"))
 suppressMessages(library("GEOquery"))
 
 # load required libraries
 library('argparser')    # Argument passing
 library('Cairo')        # Plots saving
-library('dendextend')   # Create dendogram
 library('DMwR')         # Outlier Prediction for clustering
 library('GEOquery')     # GEO dataset Retrieval
 library('ggplot2')      # Graphs designing
@@ -61,14 +59,12 @@ parser <- add_argument(parser, "--thresholdvalue" , help="threshold value cut of
 parser <- add_argument(parser, "--xaxis", help="PC used as x axis")
 parser <- add_argument(parser, "--yaxis", help="PC used as y axis")
 
-# Clustering
-parser <- add_argument(parser, "--distance", help="PC used as x axis")
-parser <- add_argument(parser, "--clustering", help="PC used as y axis")
-
 # Heatmap
 parser <- add_argument(parser, "--heatmaprows", help="Number of genes show in the heatmap")
 parser <- add_argument(parser, "--dendrow", help="Boolean value for display dendogram for Genes")
 parser <- add_argument(parser, "--dendcol", help="Boolean value for display dendogram for Samples")
+parser <- add_argument(parser, "--distance", help="PC used as x axis")
+parser <- add_argument(parser, "--clustering", help="PC used as y axis")
 
 # allow arguments to be run via the command line
 argv   <- parse_args(parser)
@@ -261,14 +257,14 @@ find.toptable <- function(X, newPClass, toptable.sortby, no.of.top.genes){
 #############################################################################
 
 # Boxplot
-samples.boxplot <- function(data){
-    boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Groups)) + theme(axis.text.x = element_text(angle = 70, hjust = 1), legend.position = 'right')+ labs(x = 'Samples', y = 'Expression Levels') + scale_color_manual(name="Groups",values = c(pop.colour1,pop.colour2), labels=c(pop.name1,pop.name2))
-    filename <- paste(output.dir,"boxplot.png",sep = "")
+samples.boxplot <- function(data, pop.colours, pop.names, path){
+    boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Groups)) + theme(axis.text.x = element_text(angle = 70, hjust = 1), legend.position = 'right')+ labs(x = 'Samples', y = 'Expression Levels') + scale_color_manual(name="Groups",values = pop.colours, labels=pop.names)
+    filename <- paste(path,"boxplot.png",sep = "")
     ggsave(filename, plot=boxplot, width = 8, height = 4)
 }
 
 # Heatmap
-heatmap <- function(X.matix, heatmap.rows = 100, cv = TRUE, rv = TRUE, dist.method, clust.method){
+heatmap <- function(X.matix, heatmap.rows = 100, cv = TRUE, rv = TRUE, dist.method, clust.method, path){
     X.matix<-X.toptable
     col.pal <- colorRampPalette(rev(brewer.pal(11, 'RdYlGn')))(100)
 #     palette <- colorRampPalette(c("white","red"))(100)
@@ -277,7 +273,7 @@ heatmap <- function(X.matix, heatmap.rows = 100, cv = TRUE, rv = TRUE, dist.meth
     # Column dendogram
     if(cv == TRUE){
         hc <- hclust(dist(t(X.matix), method = dist.method), method = clust.method)
-        plot(as.dendrogram(hc))
+        
         # Rank outliers using distance and clustering parameters
         o <- outliers.ranking(t(X.matix), 
                               test.data = NULL, 
@@ -303,7 +299,7 @@ heatmap <- function(X.matix, heatmap.rows = 100, cv = TRUE, rv = TRUE, dist.meth
     rownames(annotation_col) = expression.info[,'Sample']
     #anno_colors = list(Outliers = outlier.colours)
     
-    filename <- paste(output.dir,"heatmap.svg",sep = "")
+    filename <- paste(path,"heatmap.svg",sep = "")
     CairoSVG(file = filename)
     
     pheatmap(X.matix[1:heatmap.rows,], 
@@ -320,9 +316,9 @@ heatmap <- function(X.matix, heatmap.rows = 100, cv = TRUE, rv = TRUE, dist.meth
 }
 
 # Apply Bonferroni cut-off as the default thresold value
-volcanoplot <- function(toptable,fold.change, t = 0.05/length(gene.names)){
+volcanoplot <- function(toptable, fold.change, t = 0.05/length(gene.names), path){
     
-    # Highlight genes that have an absolute fold change > 2 and a p-value < Bonferroni cut-off
+    # Highlight genes that have an logFC greater than fold change and a p-value less than Bonferroni cut-off
     toptable$threshold = as.factor(abs(toptable$logFC) > fold.change & toptable$P.Value < t)
     
     # Construct the plot object
@@ -331,7 +327,7 @@ volcanoplot <- function(toptable,fold.change, t = 0.05/length(gene.names)){
         xlab("log2 fold change") + ylab("-log10 p-value")
     
     # File saving
-    filename <- paste(output.dir,"volcano.png",sep = "")
+    filename <- paste(path,"volcano.png",sep = "")
     ggsave(filename, plot=vol, height = 6, width = 6)
 }
 
@@ -392,14 +388,14 @@ json.list<- append(json.list,list(tops = temp.toptable))
 X.toptable <-X[as.numeric(rownames(toptable)),]
 
 if ("Boxplot" %in% analysis.list){
-    samples.boxplot(data)
+    samples.boxplot(data, c(pop.colour1,pop.colour2), c(pop.name1,pop.name2), path = output.dir)
 }
 
 if ("Volcano" %in% analysis.list){
     
     # Create complete volcano plot
     toptable.all <- find.toptable(X, newPClass, toptable.sortby, length(gene.names))
-    volcanoplot(toptable.all,fold.change)
+    volcanoplot(toptable.all, fold.change, threshold.value, output.dir)
     
     # save volcanoplot top data as JSON
     volcanoplot.data <- get.vol.data(toptable)
@@ -422,11 +418,11 @@ if ("PCA" %in% analysis.list){
 }
 
 if ("Heatmap" %in% analysis.list){
-    heatmap(X.toptable, heatmap.rows = heatmap.rows, rv = rv, cv = TRUE, dist.method, clust.method)
+    heatmap(X.toptable, heatmap.rows = heatmap.rows, rv = rv, cv = TRUE, 
+            dist.method, clust.method, output.dir)
 }
 
 if(length(json.list) != 0){
-    output.dir <- "/Users/sureshhewapathirana/Desktop/"
     filename <- paste(output.dir,"data.json",sep = "")
     write(toJSON(json.list), filename)
 }
