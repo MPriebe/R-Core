@@ -37,6 +37,6 @@ if (is.na(argv$geodbpath)) {
 }
 eset <- GDS2eSet(gse, do.log2 = FALSE)
 
-    save.image(file = argv$outrdata )
 if (! is.na(argv$outrdata)){
+  save(gse, eset, file = argv$outrdata )
 }
