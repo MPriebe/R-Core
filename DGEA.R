@@ -160,7 +160,7 @@ if (file.exists(dbrdata)){
     } else {
         gse <- getGEO(argv$accession, GSEMatrix = TRUE)            # Automatically Load GEO dataset
     }
-    eset <- GDS2eSet(gse, do.log2=TRUE)                            # Convert into ExpressionSet Object
+    eset <- GDS2eSet(gse, do.log2=FALSE)                            # Convert into ExpressionSet Object
 }
 
 X    <- exprs(eset)                                            	 # Get Expression Data
