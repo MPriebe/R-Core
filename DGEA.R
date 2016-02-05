@@ -155,7 +155,7 @@ remove(argv)
 if (file.exists(dbrdata)){
     load(file = dbrdata)
 } else {
-    if (is.null(argv$geodbpath)) {
+    if (is.na(argv$geodbpath)) {
         gse <- getGEO(filename = argv$geodbpath, GSEMatrix = TRUE) # Load data from downloaded file
     } else {
         gse <- getGEO(argv$accession, GSEMatrix = TRUE)            # Automatically Load GEO dataset
