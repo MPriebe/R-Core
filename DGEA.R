@@ -14,7 +14,9 @@
 suppressMessages(library("limma"))
 suppressMessages(library("gplots"))
 suppressMessages(library("GEOquery"))
-suppressMessages(library('pheatmap'))
+suppressMessages(library("pheatmap"))
+suppressMessages(library("plyr"))
+suppressMessages(library("DMwR"))
 
 # load required libraries
 library('argparser')    # Argument passing
@@ -329,12 +331,19 @@ get.pc.data <- function(Xpca){
     return(results)
 }
 
-get.pc.scatterplot.data <- function(Xpca){
+get.pc.scatterplot.data <- function(Xpca, populations){
     
     Xscores <- Xpca$x
     
-    # Convert each column into list
-   return(split(Xscores, rep(1:ncol(Xscores), each = nrow(Xscores))))
+    newb <- Xscores
+    rownames(Xscores) <- NULL
+    cols <- colnames(Xscores)
+    
+    Xscores <- lapply(1:nrow(Xscores), function(y) split(Xscores[,y],populations))
+    names(Xscores) <- cols
+    
+    
+   return(unlist(Xscores, recursive=FALSE))
 }
 
 #############################################################################
@@ -383,7 +392,7 @@ if ("PCA" %in% analysis.list){
     json.list<- append(json.list, list(pc = pcdata))
     
     # PC scatter plot
-    pcplotdata <- get.pc.scatterplot.data(Xpca)
+    pcplotdata <- get.pc.scatterplot.data(Xpca, expression.info[,'population'])
     
     # adding both data to the json list
     json.list<- append(json.list, list(pcdata = pcplotdata))
