@@ -108,7 +108,7 @@ pop.colour1     <- "#b71c1c"  # Red
 pop.colour2     <- "#0d47a1"  # Blue
 
 # Volcano plot Parameters
-topgene.count <- as.numeric(argv$topgenecount)
+topgene.count   <- as.numeric(argv$topgenecount)
 fold.change     <- as.numeric(argv$foldchange)
 threshold.value <- as.numeric(argv$thresholdvalue)
 toptable.sortby <- "p"
@@ -437,5 +437,5 @@ if ("Heatmap" %in% analysis.list){
 
 if (length(json.list) != 0){
     filename <- paste(output.dir, "data.json", sep = "")
-    write(toJSON(json.list), filename)
+    write(toJSON(json.list, digits=I(4)), filename )
 }
