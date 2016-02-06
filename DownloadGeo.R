@@ -3,7 +3,7 @@
 # Filename      : DGEA.R
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anissa
 # Description   : Differential Gene Expression Analysis
-# Run           : Rscript InputGeo.R --accession GDS5093 --outputdir ~/Desktop/
+# Run           : Rscript DownloadGeo.R --accession GDS5093 --outrdata ~/Desktop/
 # ---------------------------------------------------------
 
 #############################################################################
