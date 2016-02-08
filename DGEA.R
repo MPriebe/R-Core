@@ -18,6 +18,7 @@ suppressMessages(library("pheatmap"))
 suppressMessages(library("plyr"))
 suppressMessages(library("DMwR"))
 suppressMessages(library("dendextend"))
+suppressMessages(library("squash"))
 
 # load required libraries
 library("argparser")    # Argument passing
@@ -33,6 +34,7 @@ library("limma")        # Differencial Gene Expression Analysis
 library("plyr")         # Splitting, Applying and Combining Data
 library("RColorBrewer") # Import Colour Pallete
 library("reshape2")     # Prepare dataset for ggplot
+library("squash")       # Clustering Dendogram
 
 
 #############################################################################
@@ -136,11 +138,9 @@ heatmap.rows <- as.numeric(argv$heatmaprows)
 dendrow <- as.logical(argv$dendrow)
 dendcol <- as.logical(argv$dendcol)
 
-
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
-
 
 if (file.exists(dbrdata)){
     load(file = dbrdata)
@@ -153,7 +153,7 @@ if (file.exists(dbrdata)){
         gse <- getGEO(argv$accession, GSEMatrix = TRUE)
     }
     # Convert into ExpressionSet Object
-    eset <- GDS2eSet(gse, do.log2 = FALSE)
+    eset <- GDS2eSet(gse, do.log2 = TRUE)
 }
 
 X <- exprs(eset)  # Get Expression Data
@@ -164,11 +164,10 @@ logc <- (qx[5] > 100) ||
     (qx[6] - qx[1] > 50 && qx[2] > 0) ||
     (qx[2] > 0 && qx[2] < 1 && qx[4] > 1 && qx[4] < 2)
 
-if (logc) {
+if (logc == TRUE) {
     X[which(X <= 0)] <- NaN
     exprs(eset) <- log2(X)
 }
-
 
 #############################################################################
 #                       Factor Selection                                    #
@@ -284,7 +283,7 @@ heatmap <- function(X.matix, exp, heatmap.rows = 100, dendogram.row, dendogram.c
 
         ann.col <- data.frame(  Population = exp[, "population"],
                                 Factor     = exp[, "factor.type"],
-                                Outliers   = o$prob.outliers)
+                                Dissimilarity   = o$prob.outliers)
         column.gap <- 0
     }else{
         hc <- FALSE
@@ -312,22 +311,65 @@ heatmap <- function(X.matix, exp, heatmap.rows = 100, dendogram.row, dendogram.c
     dev.off()
 }
 
+outlier.probability <- function(X, dist.method = "euclidean", clust.method = "average"){
+    # Rank outliers using distance and clustering parameters
+    o <- outliers.ranking(t(X),
+                          test.data   = NULL,
+                          method      = "sizeDiff", # Outlier finding method
+                          method.pars = NULL,
+                          clus = list(dist = dist.method,
+                                      alg  = "hclust",
+                                      meth = clust.method))
+    return(o$prob.outliers)
+}
+
 #Clustering dendogram
-clustering <- function(X, dist.method = "euclidean", clust.method = "average", colourlist){
+clustering <- function(X, dist.method = "euclidean", clust.method = "average", exp){
     
-    hc <- hclust(dist(t(X), method = dist.method), method = clust.method)
-    dend <- as.dendrogram(hc)
-    labels_colors(dend) <- colourlist[order.dendrogram(dend)]
+    dendo  <-  hclust(dist(t(X), method = dist.method), method = clust.method) 
     
-    filename <- paste(output.dir,"clustering.png",sep = "")
-    CairoPNG(file = filename, width = 1000, height = 500, xlab = "Samples")
-    plot(dend)
-    dend %>% set("leaves_pch", 19)
-    legend("topright", legend = c(pop.name1,pop.name2), horiz = FALSE,
-           col = c(pop.colour1,pop.colour2), lwd = 3, title = "Groups")
-    dev.off()
+    # Factor types
+    factor <- as.factor(exp[,"factor.type"])
+    names(factor) <- exp$Sample
+    population <- as.factor(exp[,"population.colour"])
+    names(population ) <- exp$Sample
+    outliers <- outlier.probability(X, dist.method, clust.method)
     
-    return(dend)
+    factor.cmap <- makecmap(as.numeric(factor), n = length(levels(factor)), colFn = colorRampPalette(c('black', 'green')))
+    population.cmap <- makecmap(as.numeric(factor), n = length(levels(population)), colFn = colorRampPalette(c('black', 'blue')))
+    outliers.cmap <- makecmap(outliers, n = 10, colFn = colorRampPalette(c('black', 'red')))
+    
+    matrix <- data.frame(Factor =  factor, 
+                         Groups = population, 
+                         Dissimilarity = cmap( outliers, outliers.cmap))
+    jColors <-
+        with(matrix,
+             data.frame(factors = levels(Factor),
+                        color = I(brewer.pal(nlevels(Factor), name = 'Dark2'))))
+    
+    matrix <- within(matrix,{
+        Factor = jColors$color[matrix$Factor]
+    })
+    
+        filename <- paste(output.dir,"clustering.png",sep = "")
+        CairoPNG(file = filename, width = 1200, height = 700, xlab = "Samples")
+        
+        factor.cmap$colors <- jColors$color
+        factor.cmap$breaks <- jColors$factors
+        factor.cmap$include.lowest <- TRUE
+        
+        population.cmap$colors <- levels(population)
+        population.cmap$breaks <- c("Group1","Group2","")
+        population.cmap$include.lowest <- TRUE
+        
+        par(mar = c(6.5,6,4,3)+0.1)  # make space for color keys
+        dendromat(dendo, matrix, height = 0.3, ylab = 'Distance')
+        
+        vkey(factor.cmap, 'Factors', y = 0.9, stretch = 3 )
+        vkey(population.cmap, 'Groups', y = 0.6, stretch = 3)
+        vkey(outliers.cmap, 'Dissimilarity', y = 0.0, stretch =2)
+        
+        dev.off()
 }
 
 
@@ -455,7 +497,7 @@ if ("Heatmap" %in% analysis.list){
 }
 
 if ("Clustering" %in% analysis.list){
-    clustering(X, dist.method, clust.method, expression.info$population.colour)
+    clustering(X, dist.method, clust.method, expression.info)
 }
 
 if (length(json.list) != 0){
