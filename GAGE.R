@@ -1,4 +1,14 @@
-##Analysis specific to the dengue dataset.
+#!/usr/bin/Rsript
+# ---------------------------------------------------------#
+# Filename      : DGEA.R                                   #
+# Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
+# Description   : Differential Gene Expression Analysis    #
+# Rscript GAGE_10.R --accession GDS5093 --factor "infection" --outputdir "~/Desktop/" --organism "hsa"
+# ---------------------------------------------------------#
+
+
+
+## Analysis specific to the dengue dataset
 
 #----------------------Parameters to bare in mind-----------------------------
 
@@ -8,7 +18,6 @@
 # The identity of the two groups (have an option to merge groups)
 # The GO dataset to be used.
 # The type of gene sets used (kegg.gs is only for humans)
-
 
 
 #----------------------Loading the data-------------------------------------
@@ -23,17 +32,49 @@ library(pathview)     #Visualises interaction networks & used to get ENTREZ IDs
 library(GO.db)        #Loads GO database
 library(pheatmap)     #Used to create heatmap
 library(RColorBrewer) #Color palette for heatmap
+library(argparser)
 
+suppressMessages(library("GEOquery"))
+suppressMessages(library("gage"))
+suppressMessages(library("gageData"))
+suppressMessages(library("pathview"))
+suppressMessages(library("GO.db"))
+suppressMessages(library("RColorBrewer"))
+suppressMessages(library("pheatmap"))
+
+#----------------------------------------------------------------------------
+
+parser <- arg_parser("This parser contains the input arguments")
+parser <- add_argument(parser, "--accession", help="Accession Number of the GEO Database")
+parser <- add_argument(parser, "--factor", help="Factor type to be classified by")
+parser <- add_argument(parser, "--organism", help="Organism which the data comes from")
+parser <- add_argument(parser, "--outputdir", help="The output directory where graphs get saved")
+
+# allow arguments to be run via the command line
+argv <- parse_args(parser)
+
+
+#-----------------------------------------------------------------------------
+
+# Testing varables
+output.dir  <- argv$outputdir
+accession   <- argv$accession # GDS5093
+infection   <- argv$factor # "infection"
+pop.colour1 <- "#b71c1c"  # Red
+pop.colour2 <- "#0d47a1"  # Blue
+organism    <- argv$organism # "hsa"
+
+
+#-----------------------------------------------------------------------------
 
 #Importing data from GEO
-gse <- getGEO("GDS5093", GSEMatrix = TRUE)
-
-#Get dataset with expression info
-X <- Table(gse)
+gse <- getGEO(accession, GSEMatrix = TRUE)
 
 #Converting GSE to an expression set object
 eset <- GDS2eSet(gse, do.log2=TRUE)
 
+#Get dataset with expression info
+X <- Table(gse)
 
 pDat <- pData(eset)
 
@@ -89,7 +130,7 @@ for (a in 1:length(pDat$sample)){
 }
 
 data(kegg.gs)
-kg.hsa=kegg.gsets("hsa") #this picks out the human sets
+kg.hsa=kegg.gsets(argv$organism) #this picks out the human sets
 kegg.gs=kg.hsa$kg.sets[kg.hsa$sigmet.idx] #no idea but doesn't seem to work without this step
 save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R object
 
@@ -100,6 +141,8 @@ save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R 
 
 ##Using the gage function to carry out two-way analysis
 
+# test1<- gage(GEOdataset, gsets= kegg.gs, ref=NULL , samp=NULL, same.dir = F)
+
 keggresults_group1 <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, same.dir = F, compare='unpaired')
 
 
@@ -108,6 +151,7 @@ keggresults_group1 <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Gro
 
 ##Returns number of two-direction significantly enriched gene sets
 keggresults_group1_sig<-sigGeneSet(keggresults_group1)
+
 
 ##Formatting and preparation for heatmap
 
@@ -203,7 +247,3 @@ pheatmap::pheatmap(t(allsamples2),
                    gaps_col=length(Group1))
 
 
-
-
-
-##make a named list or dataframe (for mean values)
