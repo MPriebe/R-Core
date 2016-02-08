@@ -10,7 +10,7 @@
 #############################################################################
 
 source('http://bioconductor.org/biocLite.R')
-biocLite('GEOquery')
+biocLite(c("GEOquery","gage","gageData","GO.db", "pathview","pheatmap","RColorBrewer"))
 install.packages('argparser')
 install.packages('Cairo')
 install.packages('dendextend')
