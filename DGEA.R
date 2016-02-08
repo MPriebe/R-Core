@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --outputdir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap" --expsavepath ~/Desktop/topexpr.rData
+# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --outputdir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --expsavepath ~/Desktop/topexpr.rData
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -17,10 +17,13 @@ suppressMessages(library("GEOquery"))
 suppressMessages(library("pheatmap"))
 suppressMessages(library("plyr"))
 suppressMessages(library("DMwR"))
+suppressMessages(library("dendextend"))
+suppressMessages(library("squash"))
 
 # load required libraries
 library("argparser")    # Argument passing
 library("Cairo")        # Plots saving
+library("dendextend")   # Dendogram extended functionalities
 library("DMwR")         # Outlier Prediction for clustering
 library("GEOquery")     # GEO dataset Retrieval
 library("ggplot2")      # Graphs designing
@@ -31,6 +34,7 @@ library("limma")        # Differencial Gene Expression Analysis
 library("plyr")         # Splitting, Applying and Combining Data
 library("RColorBrewer") # Import Colour Pallete
 library("reshape2")     # Prepare dataset for ggplot
+library("squash")       # Clustering Dendogram
 
 
 #############################################################################
@@ -134,11 +138,9 @@ heatmap.rows <- as.numeric(argv$heatmaprows)
 dendrow <- as.logical(argv$dendrow)
 dendcol <- as.logical(argv$dendcol)
 
-
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
-
 
 if (file.exists(dbrdata)){
     load(file = dbrdata)
@@ -151,7 +153,7 @@ if (file.exists(dbrdata)){
         gse <- getGEO(argv$accession, GSEMatrix = TRUE)
     }
     # Convert into ExpressionSet Object
-    eset <- GDS2eSet(gse, do.log2 = FALSE)
+    eset <- GDS2eSet(gse, do.log2 = TRUE)
 }
 
 X <- exprs(eset)  # Get Expression Data
@@ -162,11 +164,10 @@ logc <- (qx[5] > 100) ||
     (qx[6] - qx[1] > 50 && qx[2] > 0) ||
     (qx[2] > 0 && qx[2] < 1 && qx[4] > 1 && qx[4] < 2)
 
-if (logc) {
+if (logc == TRUE) {
     X[which(X <= 0)] <- NaN
     exprs(eset) <- log2(X)
 }
-
 
 #############################################################################
 #                       Factor Selection                                    #
@@ -282,7 +283,7 @@ heatmap <- function(X.matix, exp, heatmap.rows = 100, dendogram.row, dendogram.c
 
         ann.col <- data.frame(  Population = exp[, "population"],
                                 Factor     = exp[, "factor.type"],
-                                Outliers   = o$prob.outliers)
+                                Dissimilarity   = o$prob.outliers)
         column.gap <- 0
     }else{
         hc <- FALSE
@@ -310,23 +311,84 @@ heatmap <- function(X.matix, exp, heatmap.rows = 100, dendogram.row, dendogram.c
     dev.off()
 }
 
+outlier.probability <- function(X, dist.method = "euclidean", clust.method = "average"){
+    # Rank outliers using distance and clustering parameters
+    o <- outliers.ranking(t(X),
+                          test.data   = NULL,
+                          method      = "sizeDiff", # Outlier finding method
+                          method.pars = NULL,
+                          clus = list(dist = dist.method,
+                                      alg  = "hclust",
+                                      meth = clust.method))
+    return(o$prob.outliers)
+}
+
+#Clustering dendogram
+clustering <- function(X, dist.method = "euclidean", clust.method = "average", exp){
+    
+    dendo  <-  hclust(dist(t(X), method = dist.method), method = clust.method) 
+    
+    # Factor types
+    factor <- as.factor(exp[,"factor.type"])
+    names(factor) <- exp$Sample
+    population <- as.factor(exp[,"population.colour"])
+    names(population ) <- exp$Sample
+    outliers <- outlier.probability(X, dist.method, clust.method)
+    
+    factor.cmap <- makecmap(as.numeric(factor), n = length(levels(factor)), colFn = colorRampPalette(c('black', 'green')))
+    population.cmap <- makecmap(as.numeric(factor), n = length(levels(population)), colFn = colorRampPalette(c('black', 'blue')))
+    outliers.cmap <- makecmap(outliers, n = 10, colFn = colorRampPalette(c('black', 'red')))
+    
+    matrix <- data.frame(Factor =  factor, 
+                         Groups = population, 
+                         Dissimilarity = cmap( outliers, outliers.cmap))
+    jColors <-
+        with(matrix,
+             data.frame(factors = levels(Factor),
+                        color = I(brewer.pal(nlevels(Factor), name = 'Dark2'))))
+    
+    matrix <- within(matrix,{
+        Factor = jColors$color[matrix$Factor]
+    })
+    
+        filename <- paste(output.dir,"clustering.png",sep = "")
+        CairoPNG(file = filename, width = 1200, height = 700, xlab = "Samples")
+        
+        factor.cmap$colors <- jColors$color
+        factor.cmap$breaks <- jColors$factors
+        factor.cmap$include.lowest <- TRUE
+        
+        population.cmap$colors <- levels(population)
+        population.cmap$breaks <- c("Group1","Group2","")
+        population.cmap$include.lowest <- TRUE
+        
+        par(mar = c(6.5,6,4,3)+0.1)  # make space for color keys
+        dendromat(dendo, matrix, height = 0.3, ylab = 'Distance')
+        
+        vkey(factor.cmap, 'Factors', y = 0.9, stretch = 3 )
+        vkey(population.cmap, 'Groups', y = 0.6, stretch = 3)
+        vkey(outliers.cmap, 'Dissimilarity', y = 0.0, stretch =2)
+        
+        dev.off()
+}
+
+
 # Apply Bonferroni cut-off as the default thresold value
 volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names), path){
 
     # Highlight genes that have an logFC greater than fold change
     # a p-value less than Bonferroni cut-off
-    toptable$threshold <- as.factor(abs(toptable$logFC)  > fold.change &
+    toptable$Significant <- as.factor(abs(toptable$logFC)  > fold.change &
                                         toptable$P.Value < t)
 
     # Construct the plot object
-    vol <- ggplot(data = toptable, aes(x = toptable$logFC, y = -log10(toptable$P.Value), colour = threshold)) +
+    vol <- ggplot(data = toptable, aes(x = toptable$logFC, y = -log10(toptable$P.Value), colour = Significant)) +
         geom_point(alpha = 0.4, size = 1.75)  + xlim(c(-max(toptable$logFC) - 0.1, max(toptable$logFC) + 0.1)) + ylim(c(0, max(-log10(toptable$P.Value)) + 0.5)) + xlab("log2 fold change") + ylab("-log10 p-value")
 
     # File saving
     filename <- paste(path, "volcano.png", sep = "")
     ggsave(filename, plot = vol, height = 6, width = 6)
 }
-
 
 get.volcanodata <- function(toptable){
 
@@ -370,7 +432,6 @@ get.pcplotdata <- function(Xpca, populations){
     Xscores <- lapply(1:nrow(Xscores),
                       function(y) split(Xscores[, y], populations))
     names(Xscores) <- cols
-
 
    return(unlist(Xscores, recursive = FALSE))
 }
@@ -433,6 +494,10 @@ if ("PCA" %in% analysis.list){
 if ("Heatmap" %in% analysis.list){
     heatmap(X.toptable, expression.info, heatmap.rows = heatmap.rows,
             dendrow, dendcol, dist.method, clust.method, output.dir)
+}
+
+if ("Clustering" %in% analysis.list){
+    clustering(X, dist.method, clust.method, expression.info)
 }
 
 if (length(json.list) != 0){
