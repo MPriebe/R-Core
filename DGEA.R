@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --outputdir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --expsavepath ~/Desktop/topexpr.rData
+# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --outputdir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --expsavepath ~/Desktop/topexpr.rData --adjmethod fdr
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -70,11 +70,15 @@ parser <- add_argument(parser, "--popname1",
 parser <- add_argument(parser, "--popname2",
     help = "name for GroupB")
 
+# Toptable
+parser <- add_argument(parser, "--topgenecount",
+                       help = "Number of top genes to be used")
+parser <- add_argument(parser, "--adjmethod",
+                       help = "Adjust P-values for Multiple Comparisons")
+
 # Volcano plot Parameters
 parser <- add_argument(parser, "--foldchange",
     help = "fold change cut off")
-parser <- add_argument(parser, "--topgenecount",
-    help = "number of top genes to be used")
 parser <- add_argument(parser, "--thresholdvalue",
     help = "threshold value cut off")
 
@@ -111,11 +115,20 @@ pop.name2       <- argv$popname2
 pop.colour1     <- "#b71c1c"  # Red
 pop.colour2     <- "#0d47a1"  # Blue
 
-# Volcano plot Parameters
+# Toptable
 topgene.count   <- as.numeric(argv$topgenecount)
+toptable.sortby <- "p"
+if (argv$adjmethod %in%
+    c("holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none")){
+    adj.method      <- argv$adjmethod
+}else{
+    adj.method      <- "fdr"
+}
+
+# Volcano plot Parameters
 fold.change     <- as.numeric(argv$foldchange)
 threshold.value <- as.numeric(argv$thresholdvalue)
-toptable.sortby <- "p"
+
 
 # Clustering
 if (argv$distance %in%
@@ -238,11 +251,11 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
     fit <- contrasts.fit(fit, contrasts)
 
     # empirical Bayes smoothing to standard errors
-    fit <- eBayes(fit)
+    fit <- eBayes(fit, proportion = 0.01)
 
     # Create top Table
-    toptable <- topTable(fit,
-                         sort.by = toptable.sortby, # 'p' or 'LogFC'
+    toptable <- topTable(fit,adjust.method = adj.method,
+                         sort.by = toptable.sortby, 
                          number = topgene.count)
 
     return(toptable)
