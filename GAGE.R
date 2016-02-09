@@ -108,7 +108,7 @@ Y1_matrix <-data.matrix(Y1)
 
 
 ## Create two column table containing entrez IDs for geodataset
-id.map.refseq <- id2eg(ids = X$IDENTIFIER, category = "SYMBOL", org = "hsa")
+id.map.refseq <- id2eg(ids = Y$IDENTIFIER, category = "SYMBOL", org = "hsa")
 #data(bods) - contains values  for 'org' argument. 
 
 
