@@ -540,17 +540,6 @@ if (length(json.list) != 0){
 #############################################################################
 
 
-
-#!/usr/bin/Rsript
-# ---------------------------------------------------------#
-# Filename      : DGEA.R                                   #
-# Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
-# Description   : Differential Gene Expression Analysis    #
-    # Rscript GAGE.R --accession GDS5093 --factor "infection" --outputdir "~/Desktop/" --organism "hsa"
-# ---------------------------------------------------------#
-
-## Analysis specific to the dengue dataset
-
 #----------------------Parameters to bare in mind-----------------------------
 
 # Function to include the following arguments: 
@@ -638,7 +627,6 @@ annotation_col <- pDat[factor]
 rownames(annotation_col) = pDat[,1]
 
 
-
 #------------------------Data Preparation----------------------------------------
 
 ## Creating table of organisms IDs
@@ -692,7 +680,6 @@ kegg.gs=kg.hsa$kg.sets[kg.hsa$sigmet.idx] #no idea but doesn't seem to work with
 save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R object
 
 
-
 ##Loading GO sets
 
 #BP = Biological Process MF = molecular function CC = cellular component
@@ -701,7 +688,6 @@ go.bp=go.hs$go.sets[go.hs$go.subs$BP]
 go.mf=go.hs$go.sets[go.hs$go.subs$MF]
 go.cc=go.hs$go.sets[go.hs$go.subs$CC]
 save(go.bp, go.mf, go.cc, file="go.hs.gsets.RData")
-
 
 
 #############################################################################
@@ -729,9 +715,7 @@ keggresults_analysis1_sig<-as.data.frame(keggresults_analysis1_sig)
 keggresults_analysis1_stats<-keggresults_analysis1_sig[,grep("^stats.GSM", names(keggresults_analysis1_sig), value=TRUE)]
 
 
-
 ##Interaction networks
-
 
 #Find expression change between experimental group and control
 GEOdataset.d<-GEOdataset[, Group1]-rowMeans(GEOdataset[,Group2])
@@ -753,7 +737,6 @@ Analysis1_results<-keggresults_analysis1$greater
 Analysis1_results<-Analysis1_results[complete.cases(Analysis1_results),]
 
 
-
 ##Creating a heatmap
 
 Analysis1_heatmap<-t(keggresults_analysis1_stats)
@@ -771,10 +754,8 @@ pheatmap::pheatmap(t(Analysis1_heatmap),
                    fontsize_col = 6)
 
 
-
 #Gene ontology sets
 #------------------
-
 
 #arguments: go.cc, go.mf, go.bp
 
@@ -789,7 +770,7 @@ GO_ExpVsCtrl <- function(set_type){
   ##Returns number of two-direction significantly enriched gene sets
   GOresults_analysis1_sig<-sigGeneSet(GOresults_analysis1)
   
-  
+
   ##Formatting and preparation for heatmap
   GOresults_analysis1_sig<-as.data.frame(GOresults_analysis1_sig)
   GOresults_analysis1_stats<-GOresults_analysis1_sig[,grep("^stats.GSM", names(GOresults_analysis1_sig), value=TRUE)]
@@ -799,8 +780,7 @@ GO_ExpVsCtrl <- function(set_type){
   
   ##Remove gene sets without zero enrichments
   Analysis1_results<-Analysis1_results[complete.cases(Analysis1_results),]
-  
-  
+
   
   ##Creating a heatmap
   
@@ -808,7 +788,6 @@ GO_ExpVsCtrl <- function(set_type){
   Analysis1_heatmap<-Analysis1_heatmap[,1:20]
   row.names(Analysis1_heatmap)<-gsub("(stats.)", "", row.names(Analysis1_heatmap))
   col.pal <- RColorBrewer::brewer.pal(9, "Reds")
-  
   
   pheatmap::pheatmap(t(Analysis1_heatmap), 
                      cluster_row = F,
@@ -818,7 +797,6 @@ GO_ExpVsCtrl <- function(set_type){
                      fontsize_row=6, 
                      fontsize_col = 6)
 }
-
 
 
 
@@ -895,8 +873,6 @@ pheatmap::pheatmap(t(Analysis2_heatmap),
                    gaps_col=length(Group1))
 
 
-
-
 ##Gene ontology sets
 #-------------------
 
@@ -924,16 +900,12 @@ GO_ExpVsExp <- function(set_type){
   ##Remove gene sets without zero enrichments
   Analysis2_results<-Analysis2_results[complete.cases(Analysis2_results),]
   
-  
-  
   ##Creating a heatmap
   
   Analysis2_heatmap<-t(GOresults_analysis2_stats)
   Analysis2_heatmap<-Analysis2_heatmap[,1:20]
   row.names(Analysis2_heatmap)<-gsub("(stats.)", "", row.names(Analysis2_heatmap))
   col.pal <- RColorBrewer::brewer.pal(9, "Reds")
-  
-  
   
   pheatmap::pheatmap(t(Analysis2_heatmap), 
                      cluster_row = F,
@@ -945,7 +917,3 @@ GO_ExpVsExp <- function(set_type){
                      fontsize_col = 6,
                      gaps_col=length(Group1))
 }
-
-
-
-
