@@ -3,14 +3,14 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --adjmethod fdr
+# Rscript merged_script.R --accession GDS5093 --factor "infection" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --adjmethod fdr --organism "hsa"
 # ---------------------------------------------------------#
 
 #############################################################################
 #                        Import Libraries                                   #
 #############################################################################
 
-# silent library loading messages on command line
+# silence library loading messages on command line
 suppressMessages(library("limma"))
 suppressMessages(library("gplots"))
 suppressMessages(library("GEOquery"))
@@ -19,18 +19,30 @@ suppressMessages(library("plyr"))
 suppressMessages(library("DMwR"))
 suppressMessages(library("dendextend"))
 suppressMessages(library("squash"))
+suppressMessages(library("GEOquery"))
+suppressMessages(library("gage"))
+suppressMessages(library("gageData"))
+suppressMessages(library("pathview"))
+suppressMessages(library("GO.db"))
+suppressMessages(library("RColorBrewer"))
+suppressMessages(library("pheatmap"))
 
-# load required libraries
+
+## load required libraries
 library("argparser")    # Argument passing
 library("Cairo")        # Plots saving
 library("dendextend")   # Dendogram extended functionalities
 library("DMwR")         # Outlier Prediction for clustering
+library("gage")         # Does the analysis
+library("gageData")     # Lets data be used by gage
 library("GEOquery")     # GEO dataset Retrieval
 library("ggplot2")      # Graphs designing
+library("GO.db")        # Loads GO database
 library("gplots")       # Graphs designing
 library("jsonlite")     # Convert R object to JSON format
 library("pheatmap")     # Heatmap Generating
 library("limma")        # Differencial Gene Expression Analysis
+library("pathview")     # Visualises interaction networks & used to get ENTREZ IDs
 library("plyr")         # Splitting, Applying and Combining Data
 library("RColorBrewer") # Import Colour Pallete
 library("reshape2")     # Prepare dataset for ggplot
@@ -92,15 +104,20 @@ parser <- add_argument(parser, "--distance",
 parser <- add_argument(parser, "--clustering",
     help = "HCA clustering methods")
 
+# GAGE
+parser <- add_argument(parser, "--organism", 
+                       help="Organism which the data comes from")
+
 # allow arguments to be run via the command line
 argv   <- parse_args(parser)
+
 
 #############################################################################
 #                        Command Line Arguments Retrieval                   #
 #############################################################################
 
 # General Parameters
-run.dir      <- argv$rundir
+run.dir         <- argv$rundir
 dbrdata         <- argv$dbrdata
 analysis.list   <- unlist(strsplit(argv$analyse, ","))
 
@@ -112,6 +129,14 @@ pop.name1       <- argv$popname1
 pop.name2       <- argv$popname2
 pop.colour1     <- "#b71c1c"  # Red
 pop.colour2     <- "#0d47a1"  # Blue
+organism        <- argv$organism  # "hsa"
+
+# GAGE Testing
+# rundir      <- "~/Desktop/"
+# accession   <- "GDS5093"
+# factor      <- "infection"
+# organism    <- "hsa"
+
 
 # Toptable
 topgene.count   <- as.numeric(argv$topgenecount)
@@ -167,6 +192,26 @@ if (file.exists(dbrdata)){
     eset <- GDS2eSet(gse, do.log2 = FALSE)
 }
 
+
+
+#### GAGE
+
+# Get dataset with expression info
+Y    <- Table(gse)
+
+# pDat <- pData(eset)
+
+# Annotation column for heatmap and grouping
+# annotation_col <- pDat[factor]
+# rownames(annotation_col) = pDat[,1]
+
+# annotation_col <- pClass
+# rownames(annotation_col) = pClass
+
+
+
+#### DGEA
+
 X <- exprs(eset)  # Get Expression Data
 
 # auto-detect if data is log transformed 
@@ -193,6 +238,15 @@ rownames(X)     <- gene.names
 # Phenotype Selection
 pclass           <- pData(eset)[factor.type]
 colnames(pclass) <- "factor.type"
+
+# for GAGE
+# annotation_col <- pclass
+# rownames(annotation_col) <- rownames(pclass)
+
+pDat <- pData(eset)
+annotation_col <- pDat[factor]
+rownames(annotation_col) = pDat[,1]
+
 
 #############################################################################
 #                        Two Population Preparation                         #
@@ -525,109 +579,15 @@ if (length(json.list) != 0){
 #############################################################################
 #############################################################################
 #############################################################################
-#############################################################################
-#############################################################################
-#############################################################################
-#############################################################################
-#############################################################################
-#############################################################################
-#############################################################################
-#############################################################################
+################################  GAGE  #####################################
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
 
-
-#----------------------Parameters to bare in mind-----------------------------
-
-# Function to include the following arguments: 
-# Species= To be fed into bods to get org argument value
-# The column that contains the different groups
-# The identity of the two groups (have an option to merge groups)
-# The GO dataset to be used.
-# The type of gene sets used (kegg.gs is only for humans)
-
-
-#############################################################################
-#                        Import Libraries                                   #
-#############################################################################
-
-# silence library loading messages on command line
-suppressMessages(library("GEOquery"))
-suppressMessages(library("gage"))
-suppressMessages(library("gageData"))
-suppressMessages(library("pathview"))
-suppressMessages(library("GO.db"))
-suppressMessages(library("RColorBrewer"))
-suppressMessages(library("pheatmap"))
-
-# load required libraries
-library(argparser)    # Argument passing
-library(gage)         # Does the analysis
-library(gageData)     # Lets data be used by gage
-library(GEOquery)     # GEO dataset Retrieval
-library(GO.db)        # Loads GO database
-library(pathview)     # Visualises interaction networks & used to get ENTREZ IDs
-library(pheatmap)     # Used to create heatmap
-library(RColorBrewer) # Color palette for heatmap
-
-#-------------------------------Set parsers---------------------------------------
-
-# set parsers for all input arguments
-parser <- arg_parser("This parser contains the input arguments")
-
-parser <- add_argument(parser, "--accession", 
-                       help="Accession Number of the GEO Database")
-parser <- add_argument(parser, "--factor", 
-                       help="Factor type to be classified by")
-parser <- add_argument(parser, "--organism", 
-                       help="Organism which the data comes from")
-parser <- add_argument(parser, "--outputdir", 
-                       help="The output directory where graphs get saved")
-
-# allows arguments to be run via the command line
-argv <- parse_args(parser)
-
-
-#------------------------------Set Parameters-------------------------------------
-
-# General Parameters
-output.dir  <- argv$outputdir
-
-# Sample Parameters
-accession   <- argv$accession # GDS5093
-factor   <- argv$factor    # "factor"
-pop.colour1 <- "#b71c1c"      # Red
-pop.colour2 <- "#0d47a1"      # Blue
-organism    <- argv$organism  # "hsa"
-
-rundir      <- "/Users/sureshhewapathirana/Desktop/"
-accession   <- "GDS5093"
-factor      <- "infection"
-organism    <- "hsa"
-#############################################################################
-#                        Load GEO Dataset to Start Analysis                 #
-#############################################################################
-
-# Importing data from GEO
-gse  <- getGEO(accession, GSEMatrix = TRUE)
-
-# Converting GSE to an expression set object
-eset <- GDS2eSet(gse, do.log2=TRUE)
-
-# Get dataset with expression info
-Y    <- Table(gse)
-
-pDat <- pData(eset)
-
-# Annotation column for heatmap and grouping
-annotation_col <- pDat[factor]
-rownames(annotation_col) = pDat[,1]
-
-
-#------------------------Data Preparation----------------------------------------
+#------------------------Data Preparation------------------------------------
+print("GAGE is starting")
 
 ## Creating table of organisms IDs
 data(bods)
@@ -694,10 +654,8 @@ save(go.bp, go.mf, go.cc, file="go.hs.gsets.RData")
 #               GAGE analysis for experimental vs  control                  #
 #############################################################################
 
-
 ##Kegg gene sets
 #----------------
-
 
 ##Using the gage function to carry out two-way analysis
 
@@ -755,7 +713,6 @@ pheatmap::pheatmap(t(Analysis1_heatmap),
 
 
 #Gene ontology sets
-#------------------
 
 #arguments: go.cc, go.mf, go.bp
 
@@ -806,8 +763,6 @@ GO_ExpVsCtrl <- function(set_type){
 
 
 ##Kegg gene sets
-#---------------
-
 
 ##Using the gage function to carry out two-way analysis
 
