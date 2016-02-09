@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --outputdir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --expsavepath ~/Desktop/topexpr.rData --adjmethod fdr
+# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --outputdir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --adjmethod fdr
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -53,8 +53,6 @@ parser <- add_argument(parser, "--analyse",
     help = "List of analysis to be performed", nargs = "+")
 parser <- add_argument(parser, "--geodbpath",
     help  =  "GEO Dataset full path")
-parser <- add_argument(parser, "--expsavepath",
-    help  =  "Toptable Expression data saving full path")
 
 # Sample Parameters
 parser <- add_argument(parser, "--accession",
@@ -463,7 +461,8 @@ X.toptable <- X[as.numeric(rownames(toptable)), ]
 
 # save toptable expression data
 if (! is.na(argv$expsavepath)){
-    save(X.toptable, expression.info, file = argv$expsavepath )
+    filename <- paste(output.dir,"expressionprofile.rData", sep = "")
+    save(X.toptable, expression.info, file = filename)
 }
 
 if ("Boxplot" %in% analysis.list){
