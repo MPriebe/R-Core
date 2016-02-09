@@ -68,7 +68,7 @@ output.dir  <- argv$outputdir
 
 # Sample Parameters
 accession   <- argv$accession # GDS5093
-infection   <- argv$factor    # "infection"
+factor   <- argv$factor    # "factor"
 pop.colour1 <- "#b71c1c"      # Red
 pop.colour2 <- "#0d47a1"      # Blue
 organism    <- argv$organism  # "hsa"
@@ -134,10 +134,10 @@ Group2 <- c()
 
 ## NOTE: use within
 for (a in 1:length(pDat$sample)){
-  if (pDat$infection[a] == "Dengue virus"){
+  if (pDat$factor[a] == "Dengue virus"){
     Group1<-c(Group1, (grep(pDat$sample[a], cn)))
   }
-  if (pDat$infection[a] == "control"){
+  if (pDat$factor[a] == "control"){
     Group2<- c(Group2, (grep(pDat$sample[a], cn)))
   }
 }
@@ -254,7 +254,7 @@ rownames(allsamples2) <- allsamples[,1]
 allsamples2 <- t(allsamples2)
 row.names(allsamples2) <- gsub("(stats.)", "", row.names(allsamples2))
 col.pal <- RColorBrewer::brewer.pal(9, "Reds")
-annotation_col <- data.frame( Infection = pDat[,2])
+annotation_col <- data.frame( factor = pDat[,2])
 rownames(annotation_col) = pDat[,1]
 
 pheatmap::pheatmap(t(allsamples2), 
