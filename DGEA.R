@@ -152,7 +152,7 @@ dendcol <- as.logical(argv$dendcol)
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
-gse <- NULL
+
 if (file.exists(dbrdata)){
     load(file = dbrdata)
 } else {
@@ -460,10 +460,9 @@ json.list <- append(json.list, list(tops = temp.toptable))
 X.toptable <- X[as.numeric(rownames(toptable)), ]
 
 # save toptable expression data
-if (! is.na(argv$expsavepath)){
-    filename <- paste(output.dir,"expressionprofile.rData", sep = "")
-    save(X.toptable, expression.info, file = filename)
-}
+filename <- paste(output.dir,"expressionprofile.rData", sep = "")
+save(X.toptable, expression.info, file = filename)
+
 
 if ("Boxplot" %in% analysis.list){
     samples.boxplot(data, c(pop.colour1, pop.colour2),
