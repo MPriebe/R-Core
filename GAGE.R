@@ -141,6 +141,7 @@ Group1names<-rownames(annotation_col)[annotation_col$infection == "Dengue virus"
 Group2<- which(annotation_col$infection == "control")
 Group2names<-rownames(annotation_col)[annotation_col$infection == "control" ]
 
+##Loading kegg sets
 
 data(kegg.gs)
 kg.hsa=kegg.gsets(organism) #this picks out the human sets
@@ -149,9 +150,25 @@ save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R 
 
 
 
+##Loading GO sets
+
+#BP = Biological Process MF = molecular function CC = cellular component
+go.hs=go.gsets(species="human")  #use species column of bods2
+go.bp=go.hs$go.sets[go.hs$go.subs$BP]
+go.mf=go.hs$go.sets[go.hs$go.subs$MF]
+go.cc=go.hs$go.sets[go.hs$go.subs$CC]
+save(go.bp, go.mf, go.cc, file="go.hs.gsets.RData")
+
+
+
 #############################################################################
 #               GAGE analysis for experimental vs  control                  #
 #############################################################################
+
+
+##Kegg gene sets
+#----------------
+
 
 ##Using the gage function to carry out two-way analysis
 
@@ -212,11 +229,64 @@ pheatmap::pheatmap(t(Analysis1_heatmap),
 
 
 
+#Gene ontology sets
+#------------------
+
+
+#arguments: go.cc, go.mf, go.bp
+
+GO_ExpVsCtrl <- function(set_type){
+  
+  
+  ##Using the gage function to carry out two-way analysis
+  
+  GOresults_analysis1 <- gage(GEOdataset, gsets = set_type, ref = Group2, samp = Group1, same.dir = F, compare='unpaired')
+  
+  
+  ##Returns number of two-direction significantly enriched gene sets
+  GOresults_analysis1_sig<-sigGeneSet(GOresults_analysis1)
+  
+  
+  ##Formatting and preparation for heatmap
+  GOresults_analysis1_sig<-as.data.frame(GOresults_analysis1_sig)
+  GOresults_analysis1_stats<-GOresults_analysis1_sig[,grep("^stats.GSM", names(GOresults_analysis1_sig), value=TRUE)]
+  
+  ##Results table
+  Analysis1_results<-GOresults_analysis1$greater
+  
+  ##Remove gene sets without zero enrichments
+  Analysis1_results<-Analysis1_results[complete.cases(Analysis1_results),]
+  
+  
+  
+  ##Creating a heatmap
+  
+  Analysis1_heatmap<-t(GOresults_analysis1_stats)
+  Analysis1_heatmap<-Analysis1_heatmap[,1:20]
+  row.names(Analysis1_heatmap)<-gsub("(stats.)", "", row.names(Analysis1_heatmap))
+  col.pal <- RColorBrewer::brewer.pal(9, "Reds")
+  
+  
+  pheatmap::pheatmap(t(Analysis1_heatmap), 
+                     cluster_row = F,
+                     cluster_cols = T,
+                     color = col.pal, 
+                     fontsize = 6.5,
+                     fontsize_row=6, 
+                     fontsize_col = 6)
+}
+
+
 
 
 #############################################################################
 #          GAGE analysis for two experimental groups                        #
 #############################################################################
+
+
+##Kegg gene sets
+#---------------
+
 
 ##Using the gage function to carry out two-way analysis
 
@@ -280,3 +350,55 @@ pheatmap::pheatmap(t(Analysis2_heatmap),
                    fontsize_row=6, 
                    fontsize_col = 6,
                    gaps_col=length(Group1))
+
+
+
+
+##Gene ontology sets
+#-------------------
+
+#arguments: go.cc, go.mf, go.bp
+
+GO_ExpVsExp <- function(set_type){
+  ##Using the gage function to carry out two-way analysis
+  
+  GOresults_analysis2 <- gage(GEOdataset, gsets= set_type, ref=NULL , samp=NULL, same.dir = F)
+  
+  ##Returns number of two-direction significantly enriched gene sets
+  
+  GOresults_analysis2_sig<-sigGeneSet(GOresults_analysis2)
+  
+  
+  ##Formatting and preparation for heatmap
+  
+  GOresults_analysis2_sig<-as.data.frame(GOresults_analysis2_sig)
+  GOresults_analysis2_stats<-GOresults_analysis2_sig[,grep("^stats.GSM", names(GOresults_analysis2_sig), value=TRUE)]
+  
+  ##Results table
+  
+  Analysis2_results<-GOresults_analysis2$greater
+  
+  ##Remove gene sets without zero enrichments
+  Analysis2_results<-Analysis2_results[complete.cases(Analysis2_results),]
+  
+  
+  
+  ##Creating a heatmap
+  
+  Analysis2_heatmap<-t(GOresults_analysis2_stats)
+  Analysis2_heatmap<-Analysis2_heatmap[,1:20]
+  row.names(Analysis2_heatmap)<-gsub("(stats.)", "", row.names(Analysis2_heatmap))
+  col.pal <- RColorBrewer::brewer.pal(9, "Reds")
+  
+  
+  
+  pheatmap::pheatmap(t(Analysis2_heatmap), 
+                     cluster_row = F,
+                     cluster_cols = T,
+                     annotation_col = annotation_col,
+                     color = col.pal, 
+                     fontsize = 6.5,
+                     fontsize_row=6, 
+                     fontsize_col = 6,
+                     gaps_col=length(Group1))
+}
