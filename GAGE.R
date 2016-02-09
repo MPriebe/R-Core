@@ -90,7 +90,7 @@ Y    <- Table(gse)
 pDat <- pData(eset)
 
 # Annotation column for heatmap and grouping
-annotation_col <- data.frame( Infection = pDat[,2])
+annotation_col <- pDat[factor]
 rownames(annotation_col) = pDat[,1]
 
 
