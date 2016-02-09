@@ -85,7 +85,7 @@ gse  <- getGEO(accession, GSEMatrix = TRUE)
 eset <- GDS2eSet(gse, do.log2=TRUE)
 
 # Get dataset with expression info
-X    <- Table(gse)
+Y    <- Table(gse)
 
 pDat <- pData(eset)
 
@@ -102,9 +102,9 @@ bods2       <- cbind(bods, latin_names)
 
 
 ## Remove probe ID column & convert into data matrix
-X1        <- X
-X1        <- X[,-1]
-X1_matrix <-data.matrix(X1)
+Y1        <- Y
+Y1        <- Y[,-1]
+Y1_matrix <-data.matrix(Y1)
 
 
 ## Create two column table containing entrez IDs for geodataset
@@ -114,17 +114,17 @@ id.map.refseq <- id2eg(ids = X$IDENTIFIER, category = "SYMBOL", org = "hsa")
 
 ## Replace gene symbols with ENTREZ ID in dataset matrix
 for (i in 1:length(id.map.refseq[,1])){
-  if (id.map.refseq[i,1] == X1_matrix[i,1]){
-    X1_matrix[i,1]<-id.map.refseq[i,2]
+  if (id.map.refseq[i,1] == Y1_matrix[i,1]){
+    Y1_matrix[i,1]<-id.map.refseq[i,2]
   }
 }
 
 ## Remove rows without ENTREZ IDs
-X1_matrix<-X1_matrix[complete.cases(X1_matrix),]
+Y1_matrix<-Y1_matrix[complete.cases(Y1_matrix),]
 
 ## Make first column rownames
-GEOdataset <- X1_matrix[,-1]
-rownames(GEOdataset) <- X1_matrix[,1]
+GEOdataset <- Y1_matrix[,-1]
+rownames(GEOdataset) <- Y1_matrix[,1]
 
 ## Convert to numerical matrix (for gage function)
 class(GEOdataset) <- "numeric"  
