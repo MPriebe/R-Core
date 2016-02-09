@@ -4,6 +4,7 @@
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
 # Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --adjmethod fdr
+# Rscript GAGE.R --accession GDS5093 --factor "infection" --outputdir "~/Desktop/" --organism "hsa"
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -28,19 +29,18 @@ suppressMessages(library("RColorBrewer"))
 suppressMessages(library("pheatmap"))
 
 # load required libraries
-library("gage")         # Does the analysis
-library("gageData")     # Lets data be used by gage
-library("GO.db")        # Loads GO database
-library("pathview")     # Visualises interaction networks & used to get ENTREZ IDs
-
 library("argparser")    # Argument passing
 library("Cairo")        # Plots saving
 library("dendextend")   # Dendogram extended functionalities
 library("DMwR")         # Outlier Prediction for clustering
+library("gage")         # Does the analysis
+library("gageData")     # Lets data be used by gage
 library("GEOquery")     # GEO dataset Retrieval
 library("ggplot2")      # Graphs designing
+library("GO.db")        # Loads GO database
 library("gplots")       # Graphs designing
 library("jsonlite")     # Convert R object to JSON format
+library("pathview")     # Visualises interaction networks & used to get ENTREZ IDs
 library("pheatmap")     # Heatmap Generating
 library("limma")        # Differencial Gene Expression Analysis
 library("plyr")         # Splitting, Applying and Combining Data
@@ -104,8 +104,7 @@ parser <- add_argument(parser, "--distance",
 parser <- add_argument(parser, "--clustering",
     help = "HCA clustering methods")
 
-
-# set parsers for GAGE arguments
+# GAGE
 parser <- arg_parser("This parser contains the input arguments")
 
 parser <- add_argument(parser, "--accession", 
@@ -124,7 +123,6 @@ argv <- parse_args(parser)
 #############################################################################
 #                        Command Line Arguments Retrieval                   #
 #############################################################################
-
 
 # General Parameters
 run.dir         <- argv$rundir
@@ -154,7 +152,6 @@ if (argv$adjmethod %in%
 fold.change     <- as.numeric(argv$foldchange)
 threshold.value <- as.numeric(argv$thresholdvalue)
 
-
 # Clustering
 if (argv$distance %in%
     c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski")){
@@ -173,8 +170,8 @@ if (argv$clustering %in%
 
 # Heatmap
 heatmap.rows <- as.numeric(argv$heatmaprows)
-dendrow <- as.logical(argv$dendrow)
-dendcol <- as.logical(argv$dendcol)
+dendrow      <- as.logical(argv$dendrow)
+dendcol      <- as.logical(argv$dendcol)
 
 
 #------------------------------Set Parameters for GAGE----------------------
@@ -189,7 +186,10 @@ pop.colour1 <- "#b71c1c"      # Red
 pop.colour2 <- "#0d47a1"      # Blue
 organism    <- argv$organism  # "hsa"
 
-## Testing variables
+
+#############################################################################
+#                        Testing variables				                    #
+#############################################################################
 
 # rundir      <- "/Users/sureshhewapathirana/Desktop/"
 # accession   <- "GDS5093"
@@ -211,6 +211,7 @@ pDat <- pData(eset)
 # Annotation column for heatmap and grouping
 annotation_col <- pDat[factor]
 rownames(annotation_col) = pDat[,1]
+
 
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
@@ -243,6 +244,7 @@ if (logc == TRUE) {
     X[which(X <= 0)] <- NaN
     exprs(eset) <- log2(X)
 }
+
 
 #############################################################################
 #                       Factor Selection                                    #
@@ -294,6 +296,7 @@ data <- within(melt(X), {
 newpclass           <- expression.info$population
 names(newpclass)    <- expression.info$Sample
 
+
 #############################################################################
 #                        Top Table                                          #
 #############################################################################
@@ -322,6 +325,7 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
 
     return(toptable)
 }
+
 
 #############################################################################
 #                        Graphical Representations                          #
@@ -506,6 +510,7 @@ get.pcplotdata <- function(Xpca, populations){
    return(unlist(Xscores, recursive = FALSE))
 }
 
+
 #############################################################################
 #                        Function Calling                                 #
 #############################################################################
@@ -585,12 +590,13 @@ if (length(json.list) != 0){
 #############################################################################
 #############################################################################
 #############################################################################
+###############################  GAGE  ######################################
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
-#############################################################################
+
 
 
 
@@ -608,7 +614,6 @@ if (length(json.list) != 0){
 
 ## Creating table of organisms IDs
 data(bods)
-
 bods        <- as.data.frame(bods, stringsAsFactors= TRUE )
 latin_names <- c("Anopheles","Arabidopsis thaliana", "Bos taurus", "Caenorhabditis elegans", "Canis lupus familiaris", "Drosophila melanogaster", "Danio rerio", "E coli", "Escherichia coli O157", "Gallus gallus", "Homo sapiens", "Mus musculus", "Macaca mulatta", "Anopheles gambiae", "Pan", "Rattus norvegicus", "Saccharomyces cerevisiae", "Sus scrofa", "Xenopus laevis	") 
 bods2       <- cbind(bods, latin_names)
