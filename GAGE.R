@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript GAGE.R --accession GDS5093 --factor "infection" --outputdir "~/Desktop/" --organism "hsa"
+    # Rscript GAGE.R --accession GDS5093 --factor "infection" --outputdir "~/Desktop/" --organism "hsa"
 # ---------------------------------------------------------#
 
 ## Analysis specific to the dengue dataset
@@ -41,8 +41,6 @@ library(pathview)     # Visualises interaction networks & used to get ENTREZ IDs
 library(pheatmap)     # Used to create heatmap
 library(RColorBrewer) # Color palette for heatmap
 
-
-
 #-------------------------------Set parsers---------------------------------------
 
 # set parsers for all input arguments
@@ -73,7 +71,10 @@ pop.colour1 <- "#b71c1c"      # Red
 pop.colour2 <- "#0d47a1"      # Blue
 organism    <- argv$organism  # "hsa"
 
-
+rundir      <- "/Users/sureshhewapathirana/Desktop/"
+accession   <- "GDS5093"
+factor      <- "infection"
+organism    <- "hsa"
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
@@ -135,14 +136,14 @@ class(GEOdataset) <- "numeric"
 
 
 ## Get group position and sample names
-Group1<- which(annotation_col$Infection == "Dengue virus")
-Group1names<-rownames(annotation_col)[annotation_col$Infection == "Dengue virus" ]
-Group2<- which(annotation_col$Infection == "control")
-Group2names<-rownames(annotation_col)[annotation_col$Infection == "control" ]
+Group1<- which(annotation_col$infection == "Dengue virus")
+Group1names<-rownames(annotation_col)[annotation_col$infection == "Dengue virus" ]
+Group2<- which(annotation_col$infection == "control")
+Group2names<-rownames(annotation_col)[annotation_col$infection == "control" ]
 
 
 data(kegg.gs)
-kg.hsa=kegg.gsets(argv$organism) #this picks out the human sets
+kg.hsa=kegg.gsets(organism) #this picks out the human sets
 kegg.gs=kg.hsa$kg.sets[kg.hsa$sigmet.idx] #no idea but doesn't seem to work without this step
 save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R object
 
@@ -263,17 +264,12 @@ Analysis2_results<-keggresults_analysis2$greater
 ##Remove gene sets without zero enrichments
 Analysis2_results<-Analysis2_results[complete.cases(Analysis2_results),]
 
-
-
 ##Creating a heatmap
 
 Analysis2_heatmap<-t(keggresults_analysis2_stats)
 Analysis2_heatmap<-Analysis2_heatmap[,1:20]
 row.names(Analysis2_heatmap)<-gsub("(stats.)", "", row.names(Analysis2_heatmap))
 col.pal <- RColorBrewer::brewer.pal(9, "Reds")
-
-
-
 
 pheatmap::pheatmap(t(Analysis2_heatmap), 
                    cluster_row = F,
@@ -284,8 +280,3 @@ pheatmap::pheatmap(t(Analysis2_heatmap),
                    fontsize_row=6, 
                    fontsize_col = 6,
                    gaps_col=length(Group1))
-
-
-
-
-
