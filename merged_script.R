@@ -3,21 +3,24 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --adjmethod fdr
+# Rscript merged_script.R --accession GDS5093 --factor "infection" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --adjmethod fdr --organism "hsa" --dev
 # ---------------------------------------------------------#
+
+# for every major event
+# if(argv$dev){print("xyz is created")}
 
 #############################################################################
 #                        Import Libraries                                   #
 #############################################################################
 
-# silent library loading messages on command line
+# silence library loading messages on command line
+suppressMessages(library("dendextend"))
+suppressMessages(library("DMwR"))
 suppressMessages(library("limma"))
 suppressMessages(library("gplots"))
 suppressMessages(library("GEOquery"))
 suppressMessages(library("pheatmap"))
 suppressMessages(library("plyr"))
-suppressMessages(library("DMwR"))
-suppressMessages(library("dendextend"))
 suppressMessages(library("squash"))
 suppressMessages(library("GEOquery"))
 suppressMessages(library("gage"))
@@ -27,22 +30,22 @@ suppressMessages(library("GO.db"))
 suppressMessages(library("RColorBrewer"))
 suppressMessages(library("pheatmap"))
 
-# load required libraries
-library("gage")         # Does the analysis
-library("gageData")     # Lets data be used by gage
-library("GO.db")        # Loads GO database
-library("pathview")     # Visualises interaction networks & used to get ENTREZ IDs
 
+## load required libraries
 library("argparser")    # Argument passing
 library("Cairo")        # Plots saving
 library("dendextend")   # Dendogram extended functionalities
 library("DMwR")         # Outlier Prediction for clustering
+library("gage")         # Does the analysis
+library("gageData")     # Lets data be used by gage
 library("GEOquery")     # GEO dataset Retrieval
 library("ggplot2")      # Graphs designing
+library("GO.db")        # Loads GO database
 library("gplots")       # Graphs designing
 library("jsonlite")     # Convert R object to JSON format
 library("pheatmap")     # Heatmap Generating
 library("limma")        # Differencial Gene Expression Analysis
+library("pathview")     # Visualises interaction networks & used to get ENTREZ IDs
 library("plyr")         # Splitting, Applying and Combining Data
 library("RColorBrewer") # Import Colour Pallete
 library("reshape2")     # Prepare dataset for ggplot
@@ -65,6 +68,8 @@ parser <- add_argument(parser, "--analyse",
     help = "List of analysis to be performed", nargs = "+")
 parser <- add_argument(parser, "--geodbpath",
     help  =  "GEO Dataset full path")
+parser <- add_argument(parser, "--dev",
+    help  =  "Debugger")
 
 # Sample Parameters
 parser <- add_argument(parser, "--accession",
@@ -104,27 +109,17 @@ parser <- add_argument(parser, "--distance",
 parser <- add_argument(parser, "--clustering",
     help = "HCA clustering methods")
 
-
-# set parsers for GAGE arguments
-parser <- arg_parser("This parser contains the input arguments")
-
-parser <- add_argument(parser, "--accession", 
-                       help="Accession Number of the GEO Database")
-parser <- add_argument(parser, "--factor", 
-                       help="Factor type to be classified by")
+# GAGE
 parser <- add_argument(parser, "--organism", 
                        help="Organism which the data comes from")
-parser <- add_argument(parser, "--outputdir", 
-                       help="The output directory where graphs get saved")
 
-# allows arguments to be run via the command line
-argv <- parse_args(parser)
+# allow arguments to be run via the command line
+argv   <- parse_args(parser)
 
 
 #############################################################################
 #                        Command Line Arguments Retrieval                   #
 #############################################################################
-
 
 # General Parameters
 run.dir         <- argv$rundir
@@ -139,6 +134,14 @@ pop.name1       <- argv$popname1
 pop.name2       <- argv$popname2
 pop.colour1     <- "#b71c1c"  # Red
 pop.colour2     <- "#0d47a1"  # Blue
+organism        <- argv$organism  # "hsa"
+
+# GAGE Testing
+# rundir      <- "~/Desktop/"
+# accession   <- "GDS5093"
+# factor      <- "infection"
+# organism    <- "hsa"
+
 
 # Toptable
 topgene.count   <- as.numeric(argv$topgenecount)
@@ -176,45 +179,11 @@ heatmap.rows <- as.numeric(argv$heatmaprows)
 dendrow <- as.logical(argv$dendrow)
 dendcol <- as.logical(argv$dendcol)
 
-
-#------------------------------Set Parameters for GAGE----------------------
-
-# General Parameters
-output.dir  <- argv$outputdir
-
-# Sample Parameters
-accession   <- argv$accession # GDS5093
-factor      <- argv$factor    # "factor"
-pop.colour1 <- "#b71c1c"      # Red
-pop.colour2 <- "#0d47a1"      # Blue
-organism    <- argv$organism  # "hsa"
-
-## Testing variables
-
-# rundir      <- "/Users/sureshhewapathirana/Desktop/"
-# accession   <- "GDS5093"
-# factor      <- "infection"
-# organism    <- "hsa"
-
-
-# Importing data from GEO
-gse  <- getGEO(accession, GSEMatrix = TRUE)
-
-# Converting GSE to an expression set object
-eset <- GDS2eSet(gse, do.log2=TRUE)
-
-# Get dataset with expression info
-Y    <- Table(gse)
-
-pDat <- pData(eset)
-
-# Annotation column for heatmap and grouping
-annotation_col <- pDat[factor]
-rownames(annotation_col) = pDat[,1]
-
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
+
+print("GeoDiver is starting")
 
 if (file.exists(dbrdata)){
     load(file = dbrdata)
@@ -229,6 +198,26 @@ if (file.exists(dbrdata)){
     # Convert into ExpressionSet Object
     eset <- GDS2eSet(gse, do.log2 = FALSE)
 }
+
+
+
+#### GAGE
+
+# Get dataset with expression info
+Y    <- Table(gse)
+
+# pDat <- pData(eset)
+
+# Annotation column for heatmap and grouping
+# annotation_col <- pDat[factor]
+# rownames(annotation_col) = pDat[,1]
+
+# annotation_col <- pClass
+# rownames(annotation_col) = pClass
+
+
+
+#### DGEA
 
 X <- exprs(eset)  # Get Expression Data
 
@@ -256,6 +245,15 @@ rownames(X)     <- gene.names
 # Phenotype Selection
 pclass           <- pData(eset)[factor.type]
 colnames(pclass) <- "factor.type"
+
+# for GAGE
+# annotation_col <- pclass
+# rownames(annotation_col) <- rownames(pclass)
+
+pDat <- pData(eset)
+annotation_col <- pDat[factor]
+rownames(annotation_col) = pDat[,1]
+
 
 #############################################################################
 #                        Two Population Preparation                         #
@@ -294,6 +292,7 @@ data <- within(melt(X), {
 newpclass           <- expression.info$population
 names(newpclass)    <- expression.info$Sample
 
+print("Your data has been input")
 #############################################################################
 #                        Top Table                                          #
 #############################################################################
@@ -321,6 +320,10 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
                          number = topgene.count)
 
     return(toptable)
+
+    if(argv$dev) {
+    	print("Toptable has been created")
+    }
 }
 
 #############################################################################
@@ -330,8 +333,18 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
 # Boxplot
 samples.boxplot <- function(data, pop.colours, pop.names, path){
     boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Groups), outlier.shape = NA) + theme(axis.text.x = element_text(angle = 70, hjust = 1), legend.position = "right")+ labs(x = "Samples", y = "Expression Levels") + scale_color_manual(name = "Groups", values = pop.colours, labels = pop.names)
+    # compute lower and upper whiskers
+    ylim1 = boxplot.stats(data$value)$stats[c(1, 5)]
+    
+    # scale y limits based on ylim1
+    boxplot <- boxplot + coord_cartesian(ylim = ylim1*1.05)
+    
     filename <- paste(path, "boxplot.png", sep = "")
     ggsave(filename, plot = boxplot, width = 8, height = 4)
+
+    if(argv$dev) {
+    	print("Boxplot has been created")
+    }    
 }
 
 # Calculate Outliers Probabilities/ Dissimilarities
@@ -345,6 +358,10 @@ outlier.probability <- function(X, dist.method = "euclidean", clust.method = "av
                                       alg  = "hclust",
                                       meth = clust.method))
     return(o$prob.outliers)
+    
+    if(argv$dev) {
+    	print("Outliers have been identified")
+    }
 }
 
 # Heatmap
@@ -391,6 +408,10 @@ heatmap <- function(X.matix, exp, heatmap.rows = 100, dendogram.row, dendogram.c
              fontsize_col   = 3.5,
              gaps_col       = column.gap)
     dev.off()
+    
+    if(argv$dev) {
+    	print("Heatmap has been created")
+    }
 }
 
 #Clustering dendogram
@@ -440,6 +461,10 @@ clustering <- function(X, dist.method = "euclidean", clust.method = "average", e
         vkey(outliers.cmap, 'Dissimilarity', y = 0.0, stretch =2)
         
         dev.off()
+    
+    if(argv$dev) {
+    	print("Clustering has been done")
+    }
 }
 
 
@@ -466,6 +491,10 @@ get.volcanodata <- function(toptable){
                       logFC = round(toptable$logFC, 3),
                       pVal  = -log10(toptable$P.Value))
     return(vol.list)
+
+    if(argv$dev) {
+    	print("volcanoplot has been created")
+    }
 }
 
 # Principal Component Analysis
@@ -490,6 +519,10 @@ get.pcdata <- function(Xpca){
                     cumVar = cum.var)
 
     return(results)
+
+    if(argv$dev) {
+    	print("PCA has been calculated")
+    }    
 }
 
 get.pcplotdata <- function(Xpca, populations){
@@ -504,6 +537,11 @@ get.pcplotdata <- function(Xpca, populations){
     names(Xscores) <- cols
 
    return(unlist(Xscores, recursive = FALSE))
+
+    if(argv$dev) {
+    	print("PCA has been plotted")
+    }
+
 }
 
 #############################################################################
@@ -577,34 +615,20 @@ if (length(json.list) != 0){
 
 
 
-
-
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
-#############################################################################
-#############################################################################
+################################  GAGE  #####################################
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
 #############################################################################
 
-
-
-#----------------------Parameters to bare in mind-----------------------------
-
-# Function to include the following arguments: 
-# Species= To be fed into bods to get org argument value
-# The column that contains the different groups
-# The identity of the two groups (have an option to merge groups)
-# The GO dataset to be used.
-# The type of gene sets used (kegg.gs is only for humans)
-
-
-#------------------------Data Preparation----------------------------------------
+#------------------------Data Preparation------------------------------------
+print("GAGE is starting")
 
 ## Creating table of organisms IDs
 data(bods)
@@ -649,6 +673,7 @@ Group1names<-rownames(annotation_col)[annotation_col$infection == "Dengue virus"
 Group2<- which(annotation_col$infection == "control")
 Group2names<-rownames(annotation_col)[annotation_col$infection == "control" ]
 
+##Loading kegg sets
 
 data(kegg.gs)
 kg.hsa=kegg.gsets(organism) #this picks out the human sets
@@ -656,10 +681,24 @@ kegg.gs=kg.hsa$kg.sets[kg.hsa$sigmet.idx] #no idea but doesn't seem to work with
 save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R object
 
 
+##Loading GO sets
+
+#BP = Biological Process MF = molecular function CC = cellular component
+go.hs=go.gsets(species="human")  #use species column of bods2
+go.bp=go.hs$go.sets[go.hs$go.subs$BP]
+go.mf=go.hs$go.sets[go.hs$go.subs$MF]
+go.cc=go.hs$go.sets[go.hs$go.subs$CC]
+save(go.bp, go.mf, go.cc, file="go.hs.gsets.RData")
+
 
 #############################################################################
 #               GAGE analysis for experimental vs  control                  #
 #############################################################################
+
+print("Kegg is starting")
+
+##Kegg gene sets
+#----------------
 
 ##Using the gage function to carry out two-way analysis
 
@@ -677,9 +716,7 @@ keggresults_analysis1_sig<-as.data.frame(keggresults_analysis1_sig)
 keggresults_analysis1_stats<-keggresults_analysis1_sig[,grep("^stats.GSM", names(keggresults_analysis1_sig), value=TRUE)]
 
 
-
 ##Interaction networks
-
 
 #Find expression change between experimental group and control
 GEOdataset.d<-GEOdataset[, Group1]-rowMeans(GEOdataset[,Group2])
@@ -701,7 +738,6 @@ Analysis1_results<-keggresults_analysis1$greater
 Analysis1_results<-Analysis1_results[complete.cases(Analysis1_results),]
 
 
-
 ##Creating a heatmap
 
 Analysis1_heatmap<-t(keggresults_analysis1_stats)
@@ -720,11 +756,67 @@ pheatmap::pheatmap(t(Analysis1_heatmap),
 
 
 
+if(argv$dev) {
+	print("Heatmap has been created")
+}
+
+
+#Gene ontology sets
+
+#arguments: go.cc, go.mf, go.bp
+
+print("Gene Ontology is starting")
+
+GO_ExpVsCtrl <- function(set_type){
+  
+  
+  ##Using the gage function to carry out two-way analysis
+  
+  GOresults_analysis1 <- gage(GEOdataset, gsets = set_type, ref = Group2, samp = Group1, same.dir = F, compare='unpaired')
+  
+  
+  ##Returns number of two-direction significantly enriched gene sets
+  GOresults_analysis1_sig<-sigGeneSet(GOresults_analysis1)
+  
+
+  ##Formatting and preparation for heatmap
+  GOresults_analysis1_sig<-as.data.frame(GOresults_analysis1_sig)
+  GOresults_analysis1_stats<-GOresults_analysis1_sig[,grep("^stats.GSM", names(GOresults_analysis1_sig), value=TRUE)]
+  
+  ##Results table
+  Analysis1_results<-GOresults_analysis1$greater
+  
+  ##Remove gene sets without zero enrichments
+  Analysis1_results<-Analysis1_results[complete.cases(Analysis1_results),]
+
+  
+  ##Creating a heatmap
+  
+  Analysis1_heatmap<-t(GOresults_analysis1_stats)
+  Analysis1_heatmap<-Analysis1_heatmap[,1:20]
+  row.names(Analysis1_heatmap)<-gsub("(stats.)", "", row.names(Analysis1_heatmap))
+  col.pal <- RColorBrewer::brewer.pal(9, "Reds")
+  
+  pheatmap::pheatmap(t(Analysis1_heatmap), 
+                     cluster_row = F,
+                     cluster_cols = T,
+                     color = col.pal, 
+                     fontsize = 6.5,
+                     fontsize_row=6, 
+                     fontsize_col = 6)
+    if(argv$dev) {
+    	print("Heatmap has been created")
+    }
+}
+
 
 
 #############################################################################
 #          GAGE analysis for two experimental groups                        #
 #############################################################################
+
+
+##Kegg gene sets
 
 ##Using the gage function to carry out two-way analysis
 
@@ -764,6 +856,7 @@ pv.out.list2 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = Exp1[,
 
 pv.out.list3 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = Exp2[,1:2], pathway.id = pid, species = "hsa"))
 
+print("Interaction networks have been made")
 
 ##Results table
 
@@ -788,5 +881,51 @@ pheatmap::pheatmap(t(Analysis2_heatmap),
                    fontsize_row=6, 
                    fontsize_col = 6,
                    gaps_col=length(Group1))
+    if(argv$dev) {
+    	print("Heatmap has been created")
+    }
 
+##Gene ontology sets
+#-------------------
 
+#arguments: go.cc, go.mf, go.bp
+
+GO_ExpVsExp <- function(set_type){
+  ##Using the gage function to carry out two-way analysis
+  
+  GOresults_analysis2 <- gage(GEOdataset, gsets= set_type, ref=NULL , samp=NULL, same.dir = F)
+  
+  ##Returns number of two-direction significantly enriched gene sets
+  
+  GOresults_analysis2_sig<-sigGeneSet(GOresults_analysis2)
+  
+  
+  ##Formatting and preparation for heatmap
+  
+  GOresults_analysis2_sig<-as.data.frame(GOresults_analysis2_sig)
+  GOresults_analysis2_stats<-GOresults_analysis2_sig[,grep("^stats.GSM", names(GOresults_analysis2_sig), value=TRUE)]
+  
+  ##Results table
+  
+  Analysis2_results<-GOresults_analysis2$greater
+  
+  ##Remove gene sets without zero enrichments
+  Analysis2_results<-Analysis2_results[complete.cases(Analysis2_results),]
+  
+  ##Creating a heatmap
+  
+  Analysis2_heatmap<-t(GOresults_analysis2_stats)
+  Analysis2_heatmap<-Analysis2_heatmap[,1:20]
+  row.names(Analysis2_heatmap)<-gsub("(stats.)", "", row.names(Analysis2_heatmap))
+  col.pal <- RColorBrewer::brewer.pal(9, "Reds")
+  
+  pheatmap::pheatmap(t(Analysis2_heatmap), 
+                     cluster_row = F,
+                     cluster_cols = T,
+                     annotation_col = annotation_col,
+                     color = col.pal, 
+                     fontsize = 6.5,
+                     fontsize_row=6, 
+                     fontsize_col = 6,
+                     gaps_col=length(Group1))
+}
