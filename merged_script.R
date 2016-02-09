@@ -795,3 +795,22 @@ pheatmap::pheatmap(t(Analysis2_heatmap),
                    gaps_col=length(Group1))
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
