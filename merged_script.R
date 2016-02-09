@@ -3,21 +3,24 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript merged_script.R --accession GDS5093 --factor "infection" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --adjmethod fdr --organism "hsa"
+# Rscript merged_script.R --accession GDS5093 --factor "infection" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --adjmethod fdr --organism "hsa" --dev
 # ---------------------------------------------------------#
+
+# for every major event
+# if(argv$dev){print("xyz is created")}
 
 #############################################################################
 #                        Import Libraries                                   #
 #############################################################################
 
 # silence library loading messages on command line
+suppressMessages(library("dendextend"))
+suppressMessages(library("DMwR"))
 suppressMessages(library("limma"))
 suppressMessages(library("gplots"))
 suppressMessages(library("GEOquery"))
 suppressMessages(library("pheatmap"))
 suppressMessages(library("plyr"))
-suppressMessages(library("DMwR"))
-suppressMessages(library("dendextend"))
 suppressMessages(library("squash"))
 suppressMessages(library("GEOquery"))
 suppressMessages(library("gage"))
@@ -65,6 +68,8 @@ parser <- add_argument(parser, "--analyse",
     help = "List of analysis to be performed", nargs = "+")
 parser <- add_argument(parser, "--geodbpath",
     help  =  "GEO Dataset full path")
+parser <- add_argument(parser, "--dev",
+    help  =  "Debugger")
 
 # Sample Parameters
 parser <- add_argument(parser, "--accession",
@@ -178,6 +183,8 @@ dendcol <- as.logical(argv$dendcol)
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
 
+print("GeoDiver is starting")
+
 if (file.exists(dbrdata)){
     load(file = dbrdata)
 } else {
@@ -285,6 +292,7 @@ data <- within(melt(X), {
 newpclass           <- expression.info$population
 names(newpclass)    <- expression.info$Sample
 
+print("Your data has been input")
 #############################################################################
 #                        Top Table                                          #
 #############################################################################
@@ -312,6 +320,10 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
                          number = topgene.count)
 
     return(toptable)
+
+    if(argv$dev) {
+    	print("Toptable has been created")
+    }
 }
 
 #############################################################################
@@ -329,6 +341,10 @@ samples.boxplot <- function(data, pop.colours, pop.names, path){
     
     filename <- paste(path, "boxplot.png", sep = "")
     ggsave(filename, plot = boxplot, width = 8, height = 4)
+
+    if(argv$dev) {
+    	print("Boxplot has been created")
+    }    
 }
 
 # Calculate Outliers Probabilities/ Dissimilarities
@@ -342,6 +358,10 @@ outlier.probability <- function(X, dist.method = "euclidean", clust.method = "av
                                       alg  = "hclust",
                                       meth = clust.method))
     return(o$prob.outliers)
+    
+    if(argv$dev) {
+    	print("Outliers have been identified")
+    }
 }
 
 # Heatmap
@@ -388,6 +408,10 @@ heatmap <- function(X.matix, exp, heatmap.rows = 100, dendogram.row, dendogram.c
              fontsize_col   = 3.5,
              gaps_col       = column.gap)
     dev.off()
+    
+    if(argv$dev) {
+    	print("Heatmap has been created")
+    }
 }
 
 #Clustering dendogram
@@ -437,6 +461,10 @@ clustering <- function(X, dist.method = "euclidean", clust.method = "average", e
         vkey(outliers.cmap, 'Dissimilarity', y = 0.0, stretch =2)
         
         dev.off()
+    
+    if(argv$dev) {
+    	print("Clustering has been done")
+    }
 }
 
 
@@ -463,6 +491,10 @@ get.volcanodata <- function(toptable){
                       logFC = round(toptable$logFC, 3),
                       pVal  = -log10(toptable$P.Value))
     return(vol.list)
+
+    if(argv$dev) {
+    	print("volcanoplot has been created")
+    }
 }
 
 # Principal Component Analysis
@@ -487,6 +519,10 @@ get.pcdata <- function(Xpca){
                     cumVar = cum.var)
 
     return(results)
+
+    if(argv$dev) {
+    	print("PCA has been calculated")
+    }    
 }
 
 get.pcplotdata <- function(Xpca, populations){
@@ -501,6 +537,11 @@ get.pcplotdata <- function(Xpca, populations){
     names(Xscores) <- cols
 
    return(unlist(Xscores, recursive = FALSE))
+
+    if(argv$dev) {
+    	print("PCA has been plotted")
+    }
+
 }
 
 #############################################################################
@@ -654,6 +695,8 @@ save(go.bp, go.mf, go.cc, file="go.hs.gsets.RData")
 #               GAGE analysis for experimental vs  control                  #
 #############################################################################
 
+print("Kegg is starting")
+
 ##Kegg gene sets
 #----------------
 
@@ -712,9 +755,17 @@ pheatmap::pheatmap(t(Analysis1_heatmap),
                    fontsize_col = 6)
 
 
+
+if(argv$dev) {
+	print("Heatmap has been created")
+}
+
+
 #Gene ontology sets
 
 #arguments: go.cc, go.mf, go.bp
+
+print("Gene Ontology is starting")
 
 GO_ExpVsCtrl <- function(set_type){
   
@@ -753,6 +804,9 @@ GO_ExpVsCtrl <- function(set_type){
                      fontsize = 6.5,
                      fontsize_row=6, 
                      fontsize_col = 6)
+    if(argv$dev) {
+    	print("Heatmap has been created")
+    }
 }
 
 
@@ -802,6 +856,7 @@ pv.out.list2 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = Exp1[,
 
 pv.out.list3 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = Exp2[,1:2], pathway.id = pid, species = "hsa"))
 
+print("Interaction networks have been made")
 
 ##Results table
 
@@ -826,7 +881,9 @@ pheatmap::pheatmap(t(Analysis2_heatmap),
                    fontsize_row=6, 
                    fontsize_col = 6,
                    gaps_col=length(Group1))
-
+    if(argv$dev) {
+    	print("Heatmap has been created")
+    }
 
 ##Gene ontology sets
 #-------------------
