@@ -68,7 +68,7 @@ output.dir  <- argv$outputdir
 
 # Sample Parameters
 accession   <- argv$accession # GDS5093
-infection   <- argv$factor    # "infection"
+factor   <- argv$factor    # "factor"
 pop.colour1 <- "#b71c1c"      # Red
 pop.colour2 <- "#0d47a1"      # Blue
 organism    <- argv$organism  # "hsa"
@@ -112,7 +112,7 @@ Y1_matrix <-data.matrix(Y1)
 
 
 ## Create two column table containing entrez IDs for geodataset
-id.map.refseq <- id2eg(ids = Y$IDENTIFIER, category = "SYMBOL", org = "hsa")
+id.map.refseq <- id2eg(ids = Y$IDENTIFIER, category = "SYMBOL", org = organism)
 #data(bods) - contains values  for 'org' argument. 
 
 
@@ -133,11 +133,13 @@ rownames(GEOdataset) <- Y1_matrix[,1]
 ## Convert to numerical matrix (for gage function)
 class(GEOdataset) <- "numeric"  
 
+
 ## Get group position and sample names
 Group1<- which(annotation_col$Infection == "Dengue virus")
 Group1names<-rownames(annotation_col)[annotation_col$Infection == "Dengue virus" ]
 Group2<- which(annotation_col$Infection == "control")
 Group2names<-rownames(annotation_col)[annotation_col$Infection == "control" ]
+
 
 data(kegg.gs)
 kg.hsa=kegg.gsets(argv$organism) #this picks out the human sets
@@ -269,6 +271,7 @@ Analysis2_heatmap<-t(keggresults_analysis2_stats)
 Analysis2_heatmap<-Analysis2_heatmap[,1:20]
 row.names(Analysis2_heatmap)<-gsub("(stats.)", "", row.names(Analysis2_heatmap))
 col.pal <- RColorBrewer::brewer.pal(9, "Reds")
+
 
 
 
