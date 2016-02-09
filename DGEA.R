@@ -267,6 +267,12 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
 # Boxplot
 samples.boxplot <- function(data, pop.colours, pop.names, path){
     boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Groups), outlier.shape = NA) + theme(axis.text.x = element_text(angle = 70, hjust = 1), legend.position = "right")+ labs(x = "Samples", y = "Expression Levels") + scale_color_manual(name = "Groups", values = pop.colours, labels = pop.names)
+    # compute lower and upper whiskers
+    ylim1 = boxplot.stats(data$value)$stats[c(1, 5)]
+    
+    # scale y limits based on ylim1
+    boxplot <- boxplot + coord_cartesian(ylim = ylim1*1.05)
+    
     filename <- paste(path, "boxplot.png", sep = "")
     ggsave(filename, plot = boxplot, width = 8, height = 4)
 }
