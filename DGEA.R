@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --outputdir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --adjmethod fdr
+# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --adjmethod fdr
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -45,7 +45,7 @@ library("squash")       # Clustering Dendogram
 parser <- arg_parser("This parser contains the input arguments")
 
 # General Parameters
-parser <- add_argument(parser, "--outputdir",
+parser <- add_argument(parser, "--rundir",
     help = "The outout directory where graphs get saved")
 parser <- add_argument(parser, "--dbrdata",
     help = "Downloaded GEO dataset full path")
@@ -100,7 +100,7 @@ argv   <- parse_args(parser)
 #############################################################################
 
 # General Parameters
-output.dir      <- argv$outputdir
+run.dir      <- argv$rundir
 dbrdata         <- argv$dbrdata
 analysis.list   <- unlist(strsplit(argv$analyse, ","))
 
@@ -321,6 +321,7 @@ heatmap <- function(X.matix, exp, heatmap.rows = 100, dendogram.row, dendogram.c
              cluster_row    = dendogram.row,
              cluster_cols   = hc,
              annotation_col = ann.col,
+             legend         = TRUE,
              color          = col.pal,
              fontsize       = 6.5,
              fontsize_row   = 3.5,
@@ -357,7 +358,7 @@ clustering <- function(X, dist.method = "euclidean", clust.method = "average", e
         Factor = jColors$color[matrix$Factor]
     })
     
-        filename <- paste(output.dir,"clustering.png",sep = "")
+        filename <- paste(run.dir,"clustering.png",sep = "")
         CairoPNG(file = filename, width = 1200, height = 700, xlab = "Samples")
         
         factor.cmap$colors <- jColors$color
@@ -460,13 +461,13 @@ json.list <- append(json.list, list(tops = temp.toptable))
 X.toptable <- X[as.numeric(rownames(toptable)), ]
 
 # save toptable expression data
-filename <- paste(output.dir,"expressionprofile.rData", sep = "")
+filename <- paste(run.dir,"expressionprofile.rData", sep = "")
 save(X.toptable, expression.info, file = filename)
 
 
 if ("Boxplot" %in% analysis.list){
     samples.boxplot(data, c(pop.colour1, pop.colour2),
-        c(pop.name1, pop.name2), path = output.dir)
+        c(pop.name1, pop.name2), path = run.dir) #runDir
 }
 
 if ("Volcano" %in% analysis.list){
@@ -475,7 +476,7 @@ if ("Volcano" %in% analysis.list){
     toptable.all <- find.toptable(X, newpclass,
         toptable.sortby, length(gene.names))
 
-    volcanoplot(toptable.all, fold.change, threshold.value, output.dir)
+    volcanoplot(toptable.all, fold.change, threshold.value, run.dir)
 
     # save volcanoplot top data as JSON
     volcanoplot.data <- get.volcanodata(toptable)
@@ -499,7 +500,7 @@ if ("PCA" %in% analysis.list){
 
 if ("Heatmap" %in% analysis.list){
     heatmap(X.toptable, expression.info, heatmap.rows = heatmap.rows,
-            dendrow, dendcol, dist.method, clust.method, output.dir)
+            dendrow, dendcol, dist.method, clust.method, run.dir)
 }
 
 if ("Clustering" %in% analysis.list){
@@ -507,6 +508,6 @@ if ("Clustering" %in% analysis.list){
 }
 
 if (length(json.list) != 0){
-    filename <- paste(output.dir, "data.json", sep = "")
+    filename <- paste(run.dir, "data.json", sep = "")
     write(toJSON(json.list, digits=I(4)), filename )
 }
