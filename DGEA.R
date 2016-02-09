@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --outputdir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --expsavepath ~/Desktop/topexpr.rData --adjmethod fdr
+# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --outputdir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --adjmethod fdr
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -53,8 +53,6 @@ parser <- add_argument(parser, "--analyse",
     help = "List of analysis to be performed", nargs = "+")
 parser <- add_argument(parser, "--geodbpath",
     help  =  "GEO Dataset full path")
-parser <- add_argument(parser, "--expsavepath",
-    help  =  "Toptable Expression data saving full path")
 
 # Sample Parameters
 parser <- add_argument(parser, "--accession",
@@ -154,7 +152,7 @@ dendcol <- as.logical(argv$dendcol)
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
-
+gse <- NULL
 if (file.exists(dbrdata)){
     load(file = dbrdata)
 } else {
@@ -166,17 +164,18 @@ if (file.exists(dbrdata)){
         gse <- getGEO(argv$accession, GSEMatrix = TRUE)
     }
     # Convert into ExpressionSet Object
-    eset <- GDS2eSet(gse, do.log2 = TRUE)
+    eset <- GDS2eSet(gse, do.log2 = FALSE)
 }
 
 X <- exprs(eset)  # Get Expression Data
 
-# auto-detect if data needs transformation and log2 transform if needed
+# auto-detect if data is log transformed 
 qx <- as.numeric(quantile(X, c(0., 0.25, 0.5, 0.75, 0.99, 1.0), na.rm = T))
 logc <- (qx[5] > 100) ||
     (qx[6] - qx[1] > 50 && qx[2] > 0) ||
     (qx[2] > 0 && qx[2] < 1 && qx[4] > 1 && qx[4] < 2)
 
+# If not log transformed, do the log2 transformed
 if (logc == TRUE) {
     X[which(X <= 0)] <- NaN
     exprs(eset) <- log2(X)
@@ -267,9 +266,22 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
 
 # Boxplot
 samples.boxplot <- function(data, pop.colours, pop.names, path){
-    boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Groups)) + theme(axis.text.x = element_text(angle = 70, hjust = 1), legend.position = "right")+ labs(x = "Samples", y = "Expression Levels") + scale_color_manual(name = "Groups", values = pop.colours, labels = pop.names)
+    boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Groups), outlier.shape = NA) + theme(axis.text.x = element_text(angle = 70, hjust = 1), legend.position = "right")+ labs(x = "Samples", y = "Expression Levels") + scale_color_manual(name = "Groups", values = pop.colours, labels = pop.names)
     filename <- paste(path, "boxplot.png", sep = "")
     ggsave(filename, plot = boxplot, width = 8, height = 4)
+}
+
+# Calculate Outliers Probabilities/ Dissimilarities
+outlier.probability <- function(X, dist.method = "euclidean", clust.method = "average"){
+    # Rank outliers using distance and clustering parameters
+    o <- outliers.ranking(t(X),
+                          test.data   = NULL,
+                          method      = "sizeDiff", # Outlier finding method
+                          method.pars = NULL,
+                          clus = list(dist = dist.method,
+                                      alg  = "hclust",
+                                      meth = clust.method))
+    return(o$prob.outliers)
 }
 
 # Heatmap
@@ -285,18 +297,11 @@ heatmap <- function(X.matix, exp, heatmap.rows = 100, dendogram.row, dendogram.c
                     method = dist.method),
                     method = clust.method)
 
-        # Rank outliers using distance and clustering parameters
-        o <- outliers.ranking(t(X.matix),
-                              test.data   = NULL,
-                              method      = "sizeDiff", # Outlier finding method
-                              method.pars = NULL,
-                              clus = list(dist = dist.method,
-                                          alg  = "hclust",
-                                          meth = clust.method))
+        outliers <- outlier.probability(X.matix, dist.method, clust.method)
 
         ann.col <- data.frame(  Population = exp[, "population"],
                                 Factor     = exp[, "factor.type"],
-                                Dissimilarity   = o$prob.outliers)
+                                Dissimilarity   = outliers)
         column.gap <- 0
     }else{
         hc <- FALSE
@@ -322,18 +327,6 @@ heatmap <- function(X.matix, exp, heatmap.rows = 100, dendogram.row, dendogram.c
              fontsize_col   = 3.5,
              gaps_col       = column.gap)
     dev.off()
-}
-
-outlier.probability <- function(X, dist.method = "euclidean", clust.method = "average"){
-    # Rank outliers using distance and clustering parameters
-    o <- outliers.ranking(t(X),
-                          test.data   = NULL,
-                          method      = "sizeDiff", # Outlier finding method
-                          method.pars = NULL,
-                          clus = list(dist = dist.method,
-                                      alg  = "hclust",
-                                      meth = clust.method))
-    return(o$prob.outliers)
 }
 
 #Clustering dendogram
@@ -468,7 +461,8 @@ X.toptable <- X[as.numeric(rownames(toptable)), ]
 
 # save toptable expression data
 if (! is.na(argv$expsavepath)){
-    save(X.toptable, expression.info, file = argv$expsavepath )
+    filename <- paste(output.dir,"expressionprofile.rData", sep = "")
+    save(X.toptable, expression.info, file = filename)
 }
 
 if ("Boxplot" %in% analysis.list){
