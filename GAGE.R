@@ -89,6 +89,10 @@ Y    <- Table(gse)
 
 pDat <- pData(eset)
 
+# Annotation column for heatmap and grouping
+annotation_col <- data.frame( Infection = pDat[,2])
+rownames(annotation_col) = pDat[,1]
+
 
 
 #------------------------Data Preparation----------------------------------------
@@ -128,19 +132,12 @@ rownames(GEOdataset) <- Y1_matrix[,1]
 
 ## Convert to numerical matrix (for gage function)
 class(GEOdataset) <- "numeric"  
-cn=colnames(GEOdataset)
-Group1 <- c()
-Group2 <- c()
 
-## NOTE: use within
-for (a in 1:length(pDat$sample)){
-  if (pDat$infection[a] == "Dengue virus"){
-    Group1<-c(Group1, (grep(pDat$sample[a], cn)))
-  }
-  if (pDat$infection[a] == "control"){
-    Group2<- c(Group2, (grep(pDat$sample[a], cn)))
-  }
-}
+## Get group position and sample names
+Group1<- which(annotation_col$Infection == "Dengue virus")
+Group1names<-rownames(annotation_col)[annotation_col$Infection == "Dengue virus" ]
+Group2<- which(annotation_col$Infection == "control")
+Group2names<-rownames(annotation_col)[annotation_col$Infection == "control" ]
 
 data(kegg.gs)
 kg.hsa=kegg.gsets(argv$organism) #this picks out the human sets
@@ -150,121 +147,142 @@ save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R 
 
 
 #############################################################################
-#                        GAGE analysis for group 1                          #
+#               GAGE analysis for experimental vs  control                  #
 #############################################################################
 
-## Using the gage function to carry out two-way analysis
+##Using the gage function to carry out two-way analysis
 
-# test1<- gage(GEOdataset, gsets= kegg.gs, ref=NULL , samp=NULL, same.dir = F)
-
-keggresults_group1 <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, same.dir = F, compare='unpaired')
+keggresults_analysis1 <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, same.dir = F, compare='unpaired')
 
 
-## Producing line summaries
+##Returns number of two-direction significantly enriched gene sets
+
+keggresults_analysis1_sig<-sigGeneSet(keggresults_analysis1)
 
 
-## Returns number of two-direction significantly enriched gene sets
-keggresults_group1_sig <- sigGeneSet(keggresults_group1)
+##Formatting and preparation for heatmap
 
-
-## Formatting and preparation for heatmap
-
-keggresults_group1_sig <- as.data.frame(keggresults_group1_sig)
-keggresults_group1_stats <- keggresults_group1_sig[,grep("^stats.GSM", names(keggresults_group1_sig), value=TRUE)]
+keggresults_analysis1_sig<-as.data.frame(keggresults_analysis1_sig)
+keggresults_analysis1_stats<-keggresults_analysis1_sig[,grep("^stats.GSM", names(keggresults_analysis1_sig), value=TRUE)]
 
 
 
-## Interaction networks
+##Interaction networks
 
-GEOdataset.d <- GEOdataset[, Group1]-rowMeans(GEOdataset[,Group2])
 
-## For upregulated gene pathways
-sel       <- keggresults_group1$greater[, "q.val"] < 0.1 & !is.na(keggresults_group1$greater[, "q.val"])
-path.ids  <- rownames(keggresults_group1$greater)[sel]
+#Find expression change between experimental group and control
+GEOdataset.d<-GEOdataset[, Group1]-rowMeans(GEOdataset[,Group2])
+
+
+sel <- keggresults_analysis1$greater[, "q.val"] < 0.1 & !is.na(keggresults_analysis1$greater[, "q.val"])
+path.ids <- rownames(keggresults_analysis1$greater)[sel]
 path.ids2 <- substr(path.ids, 1, 8) 
 
-## Produces  top 3 interaction networks (from 2 way analysis)
+##Produces  top 3 interaction networks (from 2 way analysis)
 pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
 
-## Results table
 
-Group1_results <- keggresults_group1$greater
+##Results table
+
+Analysis1_results<-keggresults_analysis1$greater
 
 ##Remove gene sets without zero enrichments
-Group1_results <- Group1_results[complete.cases(Group1_results),]
+Analysis1_results<-Analysis1_results[complete.cases(Analysis1_results),]
+
+
+
+##Creating a heatmap
+
+Analysis1_heatmap<-t(keggresults_analysis1_stats)
+Analysis1_heatmap<-Analysis1_heatmap[,1:20]
+row.names(Analysis1_heatmap)<-gsub("(stats.)", "", row.names(Analysis1_heatmap))
+col.pal <- RColorBrewer::brewer.pal(9, "Reds")
+
+
+pheatmap::pheatmap(t(Analysis1_heatmap), 
+                   cluster_row = F,
+                   cluster_cols = T,
+                   color = col.pal, 
+                   fontsize = 6.5,
+                   fontsize_row=6, 
+                   fontsize_col = 6)
+
+
 
 
 
 #############################################################################
-#                        GAGE analysis for group 2                          #
+#          GAGE analysis for two experimental groups                        #
 #############################################################################
 
-## Using the gage function to carry out two-way analysis
+##Using the gage function to carry out two-way analysis
 
-keggresults_group2 <- gage(GEOdataset, gsets = kegg.gs, ref = Group1, samp = Group2, same.dir = F, compare='unpaired')
+keggresults_analysis2 <- gage(GEOdataset, gsets= kegg.gs, ref=NULL , samp=NULL, same.dir = F)
 
-## Returns number of two-direction significantly enriched gene sets
-keggresults_group2_sig <- sigGeneSet(keggresults_group2)
+##Returns number of two-direction significantly enriched gene sets
 
-
-## Formatting and preparation for heatmap
-
-keggresults_group2_sig   <- as.data.frame(keggresults_group2_sig)
-keggresults_group2_stats <- keggresults_group2_sig[,grep("^stats.GSM", names(keggresults_group2_sig), value=TRUE)]
+keggresults_analysis2_sig<-sigGeneSet(keggresults_analysis2)
 
 
-## Interaction networks
+##Formatting and preparation for heatmap
 
-GEOdataset.d2 <- GEOdataset[, Group2]-rowMeans(GEOdataset[,Group1])
+keggresults_analysis2_sig<-as.data.frame(keggresults_analysis2_sig)
+keggresults_analysis2_stats<-keggresults_analysis2_sig[,grep("^stats.GSM", names(keggresults_analysis2_sig), value=TRUE)]
 
-## For upregulated gene pathways
-sel2      <- keggresults_group2$greater[, "q.val"] < 0.1 & !is.na(keggresults_group1$greater[, "q.val"])
-path.ids3 <- rownames(keggresults_group1$greater)[sel]
+
+##Interaction networks
+
+#subset GEOdataset with experimental group 1
+Exp1<- GEOdataset[,Group1names]
+
+
+#subset GEOdataset with experimental group 2
+Exp2<- GEOdataset[,Group2names]
+
+
+##Interaction pathways 
+sel2 <- keggresults_analysis2$greater[, "q.val"] < 0.1 & !is.na(keggresults_analysis2$greater[, "q.val"])
+path.ids3 <- rownames(keggresults_analysis2$greater)[sel]
 path.ids4 <- substr(path.ids, 1, 8) 
 
-## Produces  top 3 interaction networks (from 2 way analysis)
-pv.out.list2 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d2[,1:2], pathway.id = pid, species = "hsa"))
+##Interaction pathways for experimental group 1
+pv.out.list2 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = Exp1[,1:2], pathway.id = pid, species = "hsa"))
 
 
-## Results table
+##Interaction pathways for experimental group 2
 
-Group2_results <- keggresults_group2$greater
-
-## Remove gene sets without zero enrichments
-Group2_results <- Group2_results[complete.cases(Group2_results),]
+pv.out.list3 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = Exp2[,1:2], pathway.id = pid, species = "hsa"))
 
 
+##Results table
+
+Analysis2_results<-keggresults_analysis2$greater
+
+##Remove gene sets without zero enrichments
+Analysis2_results<-Analysis2_results[complete.cases(Analysis2_results),]
 
 
-#############################################################################
-#                        Creating visualisations                            #
-#############################################################################
 
-#------------------------ Heatmap ----------------------------------------
+##Creating a heatmap
 
-## Combining tables 
-
-allsamples  <- merge(keggresults_group1_stats,keggresults_group2_stats, by= "row.names", all=FALSE)
-allsamples2 <- allsamples[,-1]
-rownames(allsamples2) <- allsamples[,1]
-
-
-## Creating a heatmap
-
-allsamples2 <- t(allsamples2)
-row.names(allsamples2) <- gsub("(stats.)", "", row.names(allsamples2))
+Analysis2_heatmap<-t(keggresults_analysis2_stats)
+Analysis2_heatmap<-Analysis2_heatmap[,1:20]
+row.names(Analysis2_heatmap)<-gsub("(stats.)", "", row.names(Analysis2_heatmap))
 col.pal <- RColorBrewer::brewer.pal(9, "Reds")
-annotation_col <- data.frame( Infection = pDat[,2])
-rownames(annotation_col) = pDat[,1]
 
-pheatmap::pheatmap(t(allsamples2), 
-                   cluster_row = T,
-                   cluster_cols = F,
+
+
+pheatmap::pheatmap(t(Analysis2_heatmap), 
+                   cluster_row = F,
+                   cluster_cols = T,
                    annotation_col = annotation_col,
                    color = col.pal, 
                    fontsize = 6.5,
                    fontsize_row=6, 
                    fontsize_col = 6,
-                   gaps_col = length(Group1))
+                   gaps_col=length(Group1))
+
+
+
 
 
