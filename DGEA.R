@@ -534,6 +534,10 @@ X.toptable <- X[as.numeric(rownames(toptable)), ]
 filename <- paste(run.dir,"expressionprofile.rData", sep = "")
 save(X.toptable, expression.info, file = filename)
 
+# save tab delimited
+filename <- paste(run.dir,"toptable.tsv", sep = "")
+write.table(toptable, filename, col.names=NA, sep = "\t" )
+
 if(isdebug){
 	print(paste("TopTable has been produced", 
 	      "for", topgene.count, "genes with the cut-off method:", adj.method))

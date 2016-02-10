@@ -117,12 +117,8 @@ id.map.refseq <- id2eg(ids = Y$IDENTIFIER, category = "SYMBOL", org = organism)
 #data(bods) - contains values  for 'org' argument. 
 
 
-## Replace gene symbols with ENTREZ ID in dataset matrix
-for (i in 1:length(id.map.refseq[,1])){
-  if (id.map.refseq[i,1] == Y1_matrix[i,1]){
-    Y1_matrix[i,1]<-id.map.refseq[i,2]
-  }
-}
+##Replace gene symbols with ENTREZ ID in dataset matrix
+X1_matrix[,1]<- id.map.refseq[,2]
 
 ## Remove rows without ENTREZ IDs
 Y1_matrix<-Y1_matrix[complete.cases(Y1_matrix),]
