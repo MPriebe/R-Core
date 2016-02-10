@@ -27,7 +27,7 @@ argv   <- parse_args(parser)
 #                          Loading Saved Dataset                            #
 #############################################################################
 
-filename <- paste(argv$rundir,"dgea_expression_profile.RData", sep = "")
+filename <- paste(argv$rundir,"dgea_toptable.RData", sep = "")
 
 if (file.exists(filename)){
     load(file = filename)
