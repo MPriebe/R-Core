@@ -321,11 +321,11 @@ kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2
     analysis.results<-analysis.results[complete.cases(analysis.results),]
     
     # save "Toptable"
-    filename <- paste(rundir, "gagedata.json", sep = "")
+    filename <- paste(rundir, "gage_data.json", sep = "")
     write(toJSON(analysis.results, digits=I(4)), filename )
     
     # Creating a heatmap
-    get.heatmap(analysis.stats, "heatmap.svg")
+    get.heatmap(analysis.stats, "gage_heatmap.svg")
 }
 
 #############################################################################
@@ -354,11 +354,11 @@ go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.
     analysis.results<-analysis.results[complete.cases(analysis.results),]
     
     # save "Toptable"
-    filename <- paste(rundir, "gagedata.json", sep = "")
+    filename <- paste(rundir, "gage_data.json", sep = "")
     write(toJSON(analysis.results, digits=I(4)), "filename" )
     
     # Creating a heatmap
-    get.heatmap(analysis.stats, "heatmap.svg")
+    get.heatmap(analysis.stats, "gage_heatmap.svg")
 }
 
 #############################################################################

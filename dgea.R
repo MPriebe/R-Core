@@ -356,7 +356,7 @@ heatmap <- function(X.matix, exp, heatmap.rows = 100, dendogram.row, dendogram.c
 
     rownames(ann.col) <- exp[, "Sample"]
 
-    filename <- paste(path, "heatmap.svg", sep = "")
+    filename <- paste(path, "dgea_heatmap.svg", sep = "")
     CairoSVG(file = filename)
 
     pheatmap(X.matix[1:heatmap.rows, ],
@@ -453,7 +453,7 @@ volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names), pa
         geom_point(alpha = 0.4, size = 1.75)  + xlim(c(-max(toptable$logFC) - 0.1, max(toptable$logFC) + 0.1)) + ylim(c(0, max(-log10(toptable$P.Value)) + 0.5)) + xlab("log2 fold change") + ylab("-log10 p-value")
 
     # File saving
-    filename <- paste(path, "volcano.png", sep = "")
+    filename <- paste(path, "dgea_volcano.png", sep = "")
     ggsave(filename, plot = vol, height = 6, width = 6)
 
 	if(isdebug){
@@ -531,11 +531,11 @@ json.list <- append(json.list, list(tops = temp.toptable))
 X.toptable <- X[as.numeric(rownames(toptable)), ]
 
 # save toptable expression data
-filename <- paste(run.dir,"expressionprofile.rData", sep = "")
+filename <- paste(run.dir,"dgea_expression_profile.RData", sep = "")
 save(X.toptable, expression.info, file = filename)
 
 # save tab delimited
-filename <- paste(run.dir,"toptable.tsv", sep = "")
+filename <- paste(run.dir, "dgea_toptable.tsv", sep = "")
 write.table(toptable, filename, col.names=NA, sep = "\t" )
 
 if(isdebug){
