@@ -3,11 +3,11 @@
 # Filename      : DGEA.R
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anissa
 # Description   : Retrieve individual gene expressions and convert to JSON
-# Run           : Rscript Expressions.R  --rundir ~/Desktop/ --geneid LOC100288410
+# Run           : Rscript dgea_expression.R  --rundir ~/Desktop/ --geneid LOC100288410
 # ---------------------------------------------------------------------------
 
-library('argparser')    # Argument passing
-library('jsonlite')     # Convert R object to JSON format
+suppressMessages(library('argparser'))    # Argument passing
+suppressMessages(library('jsonlite'))     # Convert R object to JSON format
 
 #############################################################################
 #                        Command Line Arguments                             #

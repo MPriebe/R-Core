@@ -1,0 +1,4 @@
+language: R
+bioc_required: true
+script: 
+  - bash run.sh
