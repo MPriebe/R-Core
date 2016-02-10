@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript GageEdit.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --rundir "~/Desktop/" --comparisontype ExpVsCtrl --genesettype KEGG --geotype BP --dev TRUE
+# Rscript GageEdit.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --rundir "/Users/nazrathnawaz/Desktop/" --comparisontype ExpVsCtrl --genesettype KEGG --geotype BP --dev TRUE
 # ---------------------------------------------------------#
 
 ## Analysis specific to the dengue dataset
@@ -22,26 +22,17 @@
 #                        Import Libraries                                   #
 #############################################################################
 
-# silence library loading messages on command line
-suppressMessages(library("GEOquery"))
-suppressMessages(library("gage"))
-suppressMessages(library("gageData"))
-suppressMessages(library("pathview"))
-suppressMessages(library("GO.db"))
-suppressMessages(library("RColorBrewer"))
-suppressMessages(library("pheatmap"))
-
-# load required libraries
-library("argparser")    # Argument passing
-library("Cairo")        # Plots saving
-library("gage")         # Does the analysis
-library("gageData")     # Lets data be used by gage
-library("GEOquery")     # GEO dataset Retrieval
-library("GO.db")        # Loads GO database
-library("jsonlite")     # Convert R object to JSON format
-library("pathview")     # Interaction networks & used to get ENTREZ IDs
-library("pheatmap")     # Used to create heatmap
-library("RColorBrewer") # Color palette for heatmap
+# load required libraries and silence library loading messages on command line
+suppressMessages(library("argparser"))     # Argument passing
+suppressMessages(library("Cairo"))         # Plots saving
+suppressMessages(library("gage"))          # Does the analysis
+suppressMessages(library("gageData"))      # Lets data be used by gage
+suppressMessages(library("GEOquery"))      # GEO dataset Retrieval
+suppressMessages(library("GO.db"))         # Loads GO database
+suppressMessages(library("jsonlite"))      # Convert R object to JSON format
+suppressMessages(library("pathview"))      # Interaction networks & used to get ENTREZ IDs
+suppressMessages(library("pheatmap"))      # Used to create heatmap
+suppressMessages(library("RColorBrewer"))  # Color palette for heatmap
 
 #-------------------------------Set parsers---------------------------------------
 
@@ -86,13 +77,18 @@ argv <- parse_args(parser)
 # General Parameters
 rundir          <- argv$rundir
 dbrdata         <- argv$dbrdata
-isdebug         <- argv$dev
+
+if(!is.na(argv$dev)){
+	isdebug     <- argv$dev
+} else {
+	isdebug     <- FALSE
+}
 
 # Sample Parameters
 accession   <- argv$accession
 factor.type <- argv$factor
-population1     <- unlist(strsplit(argv$popA, ","))
-population2     <- unlist(strsplit(argv$popB, ","))
+population1 <- unlist(strsplit(argv$popA, ","))
+population2 <- unlist(strsplit(argv$popB, ","))
 
 pop.colour1 <- "#b71c1c"
 pop.colour2 <- "#0d47a1"
@@ -105,6 +101,13 @@ geo.type        <- argv$geotype         # "BP" # or "MF" or "CC"
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
+if(isdebug){
+	print("GeoDiver is starting")
+}
+
+if(isdebug){
+	print("Libraries have been loaded")
+}
 
 if (file.exists(dbrdata)){
     load(file = dbrdata)
@@ -120,7 +123,6 @@ if (file.exists(dbrdata)){
     eset <- GDS2eSet(gse, do.log2 = FALSE)
 }
 
-if( isdebug ) { print("INFO : Data Loading completed!") }
 
 # Get dataset with expression info
 Y           <- Table(gse)
@@ -129,6 +131,23 @@ organism    <- as.character(Meta(gse)$sample_organism)
 # Phenotype Selection
 pclass           <- pData(eset)[factor.type]
 colnames(pclass) <- "factor.type"
+
+
+if(isdebug){
+	print("Datset has been loaded")
+}
+
+if(isdebug){
+	print(paste("Analyzing the factor", factor.type))
+}
+
+if(isdebug){
+	print(paste("for", argv$popA)) 
+}
+
+if(isdebug){
+	print(paste("against", argv$popB))
+}
 
 #############################################################################
 #                        Two Population Preparation                         #
@@ -156,7 +175,9 @@ Group1names<- expression.info[Group1,"Sample"]
 Group2<-  which(expression.info[,"population"] == "Group2") 
 Group2names<- expression.info[Group2,"Sample"]  
 
-if( isdebug ){print("INFO :Population Selection completed!")}
+if(isdebug){
+	print("Factors and Populations have been set")
+}
 
 #############################################################################
 #                            Data Preparation                               #
@@ -196,7 +217,9 @@ rownames(GEOdataset) <- Y1_matrix[,1]
 ## Convert to numerical matrix (for gage function)
 class(GEOdataset) <- "numeric"  
 
-if(isdebug ){print("INFO : Data Preparation completed!")}
+if(isdebug){
+	print("Data Preparation completed")
+}
 
 #############################################################################
 #                          Gage  Data Loading                               #
@@ -217,7 +240,9 @@ go.cc = go.hs$go.sets[go.hs$go.subs$CC] # CC = cellular component
 filename <- paste(rundir, "go.hs.gsets.RData", sep="")
 save(go.bp, go.mf, go.cc, file = filename)
 
-if(isdebug ){print("INFO : Gage Data Preparation completed!")}
+if(isdebug){
+	print("Gage Data Preparation completed!")
+}
 
 #############################################################################
 #               Heatmap                  #
@@ -232,7 +257,11 @@ get.heatmap <- function(analysis.stats, heatmap.name){
         RColorBrewer::brewer.pal(11, "RdYlGn")))(100)
     
     filename <- paste(rundir, heatmap.name, sep="")
-    if(isdebug ){print(paste("INFO :Saving heatmap:", filename))}
+
+    if(isdebug ){
+    	print(paste("Saving heatmap", filename))
+    }
+
     CairoSVG(file = filename)
     pheatmap::pheatmap(t(analysis.heatmap), 
                        cluster_row = F,
@@ -246,8 +275,9 @@ get.heatmap <- function(analysis.stats, heatmap.name){
     dev.off()
 
 }
+
 #############################################################################
-#               GAGE analysis for KEGG                  #
+#                        GAGE analysis for KEGG                             #
 #############################################################################
 
 kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2, samp.group = G1, compare.option = "paired"){
@@ -357,17 +387,22 @@ if(comparison.type =="ExpVsCtrl"){
 
 if(geneset.type == "KEGG"){
     kegg.analysis(kegg.gs, comparison.type, G2, G1, comp.option)
-    if(isdebug ){print("INFO : KEGG Analysis completed!")}
+    if(isdebug ){
+    	print("KEGG Analysis completed!")
+    }
 }
+
 if(geneset.type == "GO"){
     if(geo.type == "BP"){
         go.analysis(go.bp, comparison.type, G2, G1,comp.option)
-    }else if(geo.type == "MF"){
+    } else if(geo.type == "MF"){
         go.analysis(go.mf, comparison.type, G2, G1,comp.option)
-    }else if(geo.type == "CC"){
+    } else if(geo.type == "CC"){
         go.analysis(go.cc, comparison.type, G2, G1,comp.option)
     }
     
-    if(isdebug ){print("INFO : GO Analysis completed!")}
+    if(isdebug){
+    	print("GO Analysis completed!")
+	}
 }
 
