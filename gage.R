@@ -123,35 +123,20 @@ if (file.exists(dbrdata)){
     eset <- GDS2eSet(gse, do.log2 = FALSE)
 }
 
-
-# Get dataset with expression info
-Y           <- Table(gse)
-organism    <- as.character(Meta(gse)$sample_organism)
-
-# Phenotype Selection
-pclass           <- pData(eset)[factor.type]
-colnames(pclass) <- "factor.type"
-
-
 if(isdebug){
-	print("Datset has been loaded")
-}
-
-if(isdebug){
-	print(paste("Analyzing the factor", factor.type))
-}
-
-if(isdebug){
-	print(paste("for", argv$popA)) 
-}
-
-if(isdebug){
-	print(paste("against", argv$popB))
+  print("Datset has been loaded")
+  print(paste("Analyzing the factor", factor.type))
+  print(paste("for", argv$popA)) 
+  print(paste("against", argv$popB))
 }
 
 #############################################################################
 #                        Two Population Preparation                         #
 #############################################################################
+
+# Phenotype Selection
+pclass           <- pData(eset)[factor.type]
+colnames(pclass) <- "factor.type"
 
 # Create a data frame with the factors
 expression.info  <- data.frame(pclass,
@@ -176,7 +161,7 @@ Group2<-  which(expression.info[,"population"] == "Group2")
 Group2names<- expression.info[Group2,"Sample"]  
 
 if(isdebug){
-	print("Factors and Populations have been set")
+  print("Factors and Populations have been set")
 }
 
 #############################################################################
@@ -185,6 +170,7 @@ if(isdebug){
 
 ## Creating table of organisms IDs
 data(bods)
+organism    <- as.character(Meta(gse)$sample_organism)
 
 bods        <- as.data.frame(bods, stringsAsFactors= TRUE )
 latin_names <- c("Anopheles","Arabidopsis thaliana", "Bos taurus", "Caenorhabditis elegans", 
@@ -196,13 +182,14 @@ bods2       <- cbind(bods, latin_names)
 
 keggcode.organism <- bods2[which(bods2[,"latin_names"] == organism),"kegg code"]
 
+# Get dataset with expression info
+Y           <- Table(gse)
+
 ## Remove probe ID column & convert into data matrix
 Y1_matrix <-data.matrix(Table(gse)[,-1])
 
 ## Create two column table containing entrez IDs for geodataset
 id.map.refseq <- id2eg(ids = Y$IDENTIFIER, category = "SYMBOL", org = keggcode.organism)
-
-#data(bods) - contains values  for 'org' argument. 
 
 ## Replace gene symbols with ENTREZ ID in dataset matrix
 Y1_matrix[,1]<-id.map.refseq[,2]
@@ -225,20 +212,22 @@ if(isdebug){
 #                          Gage  Data Loading                               #
 #############################################################################
 
-# Loading kegg sets
-data(kegg.gs)
-kg.hsa  = kegg.gsets(organism)                       #this picks out the human sets
-kegg.gs = kg.hsa$kg.sets[kg.hsa$sigmet.idx]         # no idea but doesn't seem to work without this step
-filename <- paste(rundir, "kegg.hsa.sigmet.gsets.RData", sep="")
-save(kegg.gs, file = filename) #saves the human sets as an R object
-
-# Loading GO sets
-go.hs = go.gsets(species="human")       # use species column of bods2
-go.bp = go.hs$go.sets[go.hs$go.subs$BP] # BP = Biological Process
-go.mf = go.hs$go.sets[go.hs$go.subs$MF] # MF = molecular function
-go.cc = go.hs$go.sets[go.hs$go.subs$CC] # CC = cellular component
-filename <- paste(rundir, "go.hs.gsets.RData", sep="")
-save(go.bp, go.mf, go.cc, file = filename)
+if ('KEGG' == 'KEGG') {
+  # Loading kegg sets
+  data(kegg.gs)
+  kg.hsa  = kegg.gsets(organism)                       #this picks out the human sets
+  kegg.gs = kg.hsa$kg.sets[kg.hsa$sigmet.idx]         # no idea but doesn't seem to work without this step
+  # filename <- paste(rundir, "kegg.hsa.sigmet.gsets.RData", sep="")
+  # save(kegg.gs, file = filename) #saves the human sets as an R object
+} else if ('GO' == 'GO') {
+  # Loading GO sets
+  go.hs = go.gsets(species="human")       # use species column of bods2
+  go.bp = go.hs$go.sets[go.hs$go.subs$BP] # BP = Biological Process
+  go.mf = go.hs$go.sets[go.hs$go.subs$MF] # MF = molecular function
+  go.cc = go.hs$go.sets[go.hs$go.subs$CC] # CC = cellular component
+  # filename <- paste(rundir, "go.hs.gsets.RData", sep="")
+  # save(go.bp, go.mf, go.cc, file = filename)
+}  
 
 if(isdebug){
 	print("Gage Data Preparation completed!")
