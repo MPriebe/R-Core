@@ -98,26 +98,6 @@ comparison.type <- argv$comparisontype  # "ExpVsCtrl"  # or ExpVsExp
 geneset.type    <- argv$genesettype     # "KEGG"  # or "GO"
 geo.type        <- argv$geotype         # "BP" # or "MF" or "CC"
 
-
-#----------------- TESTING -----------
-# 
-# rundir          <- "~/Desktop/"
-# dbrdata         <- "~/Desktop/GDS5093.RData"
-# isdebug     <- TRUE
-# 
-# # Sample Parameters
-# accession   <- "GDS5093"
-# factor.type <- "disease.state"
-# population1 <- c("Dengue Hemorrhagic Fever","Convalescent","Dengue Fever")
-# population2 <- c("healthy control")
-# 
-# pop.colour1 <- "#b71c1c"
-# pop.colour2 <- "#0d47a1"
-# 
-# # Gage parameters
-# comparison.type <- "ExpVsCtrl"  # "ExpVsCtrl"  # or ExpVsExp
-# geneset.type    <- "KEGG"     # "KEGG"  # or "GO"
-# geo.type        <- "BP"
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
