@@ -10,31 +10,21 @@
 #                        Import Libraries                                   #
 #############################################################################
 
-# silent library loading messages on command line
-suppressMessages(library("limma"))
-suppressMessages(library("gplots"))
-suppressMessages(library("GEOquery"))
-suppressMessages(library("pheatmap"))
-suppressMessages(library("plyr"))
-suppressMessages(library("DMwR"))
-suppressMessages(library("dendextend"))
-suppressMessages(library("squash"))
-
-# load required libraries
-library("argparser")    # Argument passing
-library("Cairo")        # Plots saving
-library("dendextend")   # Dendogram extended functionalities
-library("DMwR")         # Outlier Prediction for clustering
-library("GEOquery")     # GEO dataset Retrieval
-library("ggplot2")      # Graphs designing
-library("gplots")       # Graphs designing
-library("jsonlite")     # Convert R object to JSON format
-library("pheatmap")     # Heatmap Generating
-library("limma")        # Differencial Gene Expression Analysis
-library("plyr")         # Splitting, Applying and Combining Data
-library("RColorBrewer") # Import Colour Pallete
-library("reshape2")     # Prepare dataset for ggplot
-library("squash")       # Clustering Dendogram
+# load required libraries and silence library loading messages on command line
+suppressMessages(library("argparser"))     # Argument passing
+suppressMessages(library("Cairo"))         # Plots saving
+suppressMessages(library("dendextend"))    # Dendogram extended functionalities
+suppressMessages(library("DMwR"))          # Outlier Prediction for clustering
+suppressMessages(library("GEOquery"))      # GEO dataset Retrieval
+suppressMessages(library("ggplot2"))       # Graphs designing
+suppressMessages(library("gplots"))        # Graphs designing
+suppressMessages(library("jsonlite"))      # Convert R object to JSON format
+suppressMessages(library("pheatmap"))      # Heatmap Generating
+suppressMessages(library("limma"))         # Differencial Gene Expression Analysis
+suppressMessages(library("plyr"))          # Splitting, Applying and Combining Data
+suppressMessages(library("RColorBrewer"))  # Import Colour Pallete
+suppressMessages(library("reshape2"))      # Prepare dataset for ggplot
+suppressMessages(library("squash"))        # Clustering Dendogram
 
 
 #############################################################################
