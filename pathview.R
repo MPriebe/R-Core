@@ -15,8 +15,10 @@ library("pathview")     # Creates Heatmap
 
 # Add parsers
 
-parser <- add_argument(parser, "--gagedata", 
+parser <- add_argument(parser, "--analysis", 
                        help="The GAGE results full path")
+parser <- add_argument(parser, "--GEOdataset",
+                       help= "The GEOdataset used in the GAGE analysis")
 
 parser <- add_argument(parser, "--analysis.type",
                        help="Genesets used and whether or not B should be treated as a control")
@@ -44,7 +46,8 @@ argv <- parse_args(parser)
 
 
 #General parameters
-gagedata   <- argv$gagedata
+analysis   <- argv$analysis
+GEOdataset <- argv$GEOdataset
 analysis.type <- argv$analysis.type
 factor.type <- argv$factor 
 population1     <- unlist(strsplit(argv$popA, ","))
