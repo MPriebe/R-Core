@@ -61,10 +61,10 @@ parser <- add_argument(parser, "--factor",
 
 # Sample Parameters
 parser <- add_argument(parser, "--comparisontype", help = "ExpVsCtrl or ExpVsExp")
-parser <- add_argument(parser, "--genesettype",help = "KEGG or GO")
+parser <- add_argument(parser, "--genesettype", help = "KEGG or GO")
 parser <- add_argument(parser, "--geotype",
-                       help = "BP - Biological Process or 
-                               MF - molecular function 
+                       help = "BP - Biological Process or
+                               MF - molecular function
                                or CC - Cellular Component")
 
 # allows arguments to be run via the command line
@@ -98,6 +98,26 @@ comparison.type <- argv$comparisontype  # "ExpVsCtrl"  # or ExpVsExp
 geneset.type    <- argv$genesettype     # "KEGG"  # or "GO"
 geo.type        <- argv$geotype         # "BP" # or "MF" or "CC"
 
+
+#----------------- TESTING -----------
+# 
+# rundir          <- "~/Desktop/"
+# dbrdata         <- "~/Desktop/GDS5093.RData"
+# isdebug     <- TRUE
+# 
+# # Sample Parameters
+# accession   <- "GDS5093"
+# factor.type <- "disease.state"
+# population1 <- c("Dengue Hemorrhagic Fever","Convalescent","Dengue Fever")
+# population2 <- c("healthy control")
+# 
+# pop.colour1 <- "#b71c1c"
+# pop.colour2 <- "#0d47a1"
+# 
+# # Gage parameters
+# comparison.type <- "ExpVsCtrl"  # "ExpVsCtrl"  # or ExpVsExp
+# geneset.type    <- "KEGG"     # "KEGG"  # or "GO"
+# geo.type        <- "BP"
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
@@ -212,14 +232,14 @@ if(isdebug){
 #                          Gage  Data Loading                               #
 #############################################################################
 
-if ('KEGG' == 'KEGG') {
+if (geneset.type == 'KEGG') {
   # Loading kegg sets
   data(kegg.gs)
   kg.hsa  = kegg.gsets(organism)                       #this picks out the human sets
   kegg.gs = kg.hsa$kg.sets[kg.hsa$sigmet.idx]         # no idea but doesn't seem to work without this step
   # filename <- paste(rundir, "kegg.hsa.sigmet.gsets.RData", sep="")
   # save(kegg.gs, file = filename) #saves the human sets as an R object
-} else if ('GO' == 'GO') {
+} else if (geneset.type == 'GO') {
   # Loading GO sets
   go.hs = go.gsets(species="human")       # use species column of bods2
   go.bp = go.hs$go.sets[go.hs$go.subs$BP] # BP = Biological Process
@@ -227,7 +247,7 @@ if ('KEGG' == 'KEGG') {
   go.cc = go.hs$go.sets[go.hs$go.subs$CC] # CC = cellular component
   # filename <- paste(rundir, "go.hs.gsets.RData", sep="")
   # save(go.bp, go.mf, go.cc, file = filename)
-}  
+}
 
 if(isdebug){
 	print("Gage Data Preparation completed!")
@@ -238,13 +258,13 @@ if(isdebug){
 #############################################################################
 
 get.heatmap <- function(analysis.stats, heatmap.name){
-    
+
     analysis.heatmap<-t(analysis.stats)
     analysis.heatmap<-analysis.heatmap
     row.names(analysis.heatmap)<-gsub("(stats.)", "", row.names(analysis.heatmap))
     col.pal <- colorRampPalette(rev(
         RColorBrewer::brewer.pal(11, "RdYlGn")))(100)
-    
+
     filename <- paste(rundir, heatmap.name, sep="")
 
     if(isdebug ){
@@ -320,9 +340,15 @@ kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2
     # Remove gene sets without zero enrichments
     analysis.results<-analysis.results[complete.cases(analysis.results),]
     
+    # Make "Toptable" with ID column
+    id.names <- rownames(analysis.results)
+    toptable = data.frame(id.names,analysis.results[,1:5])
+    rownames(toptable) <- NULL
+    colnames(toptable)<- NULL
+    
     # save "Toptable"
-    filename <- paste(rundir, "gage_data.json", sep = "")
-    write(toJSON(analysis.results, digits=I(4)), filename )
+    filename <- paste(rundir, "gage_data.json", sep="")
+    write(toJSON(list(tops = toptable), digits=I(4)), filename )
     
     # Creating a heatmap
     get.heatmap(analysis.stats, "gage_heatmap.svg")
@@ -334,7 +360,7 @@ kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2
 
 #arguments: go.cc, go.mf, go.bp
 
-go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.group, compare.option = "paired" ){
+go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.group, compare.option = "unpaired" ){
   
         analysis <- gage(GEOdataset, gsets = set.type, 
                                     ref = ref.group, samp = samp.group, 
@@ -353,9 +379,15 @@ go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.
     # Remove gene sets without zero enrichments
     analysis.results<-analysis.results[complete.cases(analysis.results),]
     
-    # save "Toptable"
-    filename <- paste(rundir, "gage_data.json", sep = "")
-    write(toJSON(analysis.results, digits=I(4)), "filename" )
+    # Make "Toptable" with ID column
+    id.names <- rownames(analysis.results)
+    toptable = data.frame(id.names,analysis.results[,1:5])
+    rownames(toptable) <- NULL
+    colnames(toptable)<- NULL
+    
+    # Save "Toptable"
+    filename <- paste(rundir, "gage_data.json", sep="")
+    write(toJSON(list(tops = toptable), digits=I(4)), filename )
     
     # Creating a heatmap
     get.heatmap(analysis.stats, "gage_heatmap.svg")
