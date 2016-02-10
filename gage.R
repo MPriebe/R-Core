@@ -281,6 +281,12 @@ kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2
     # Formatting and preparation for heatmap
     analysis.sig<-as.data.frame(analysis.sig)
     analysis.stats<-analysis.sig[,grep("^stats.GSM", names(analysis.sig), value=TRUE)]
+  
+    # Get only Pathway IDs
+    m<-regmatches(rownames(analysis.sig), regexpr(" ", rownames(analysis.sig)), invert = TRUE)
+    pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
+    pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
+    rownames(analysis.stats) <- pathway.id 
     
     ##Interaction networks
     
@@ -320,9 +326,13 @@ kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2
     # Remove gene sets without zero enrichments
     analysis.results<-analysis.results[complete.cases(analysis.results),]
     
-    # Make "Toptable" with ID column
-    id.names <- rownames(analysis.results)
-    toptable = data.frame(id.names,analysis.results[,1:5])
+    # Extract Pathway ID and Names
+    m<-regmatches(rownames(analysis.results), regexpr(" ", rownames(analysis.results)), invert = TRUE)
+    pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
+    pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
+    
+    # Create top table
+    toptable = data.frame(pathway.id, pathway.name, analysis.results[,1:5])
     rownames(toptable) <- NULL
     colnames(toptable)<- NULL
     
@@ -352,6 +362,12 @@ go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.
     # Formatting and preparation for heatmap
     analysis.sig <- as.data.frame(analysis.sig)
     analysis.stats<-analysis.sig[,grep("^stats.GSM", names(analysis.sig), value=TRUE)]
+
+    # Get only Pathway IDs
+    m<-regmatches(rownames(analysis.sig), regexpr(" ", rownames(analysis.sig)), invert = TRUE)
+    pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
+    pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
+    rownames(analysis.stats) <- pathway.id 
     
     # Results table
     analysis.results<-analysis$greater
@@ -359,13 +375,17 @@ go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.
     # Remove gene sets without zero enrichments
     analysis.results<-analysis.results[complete.cases(analysis.results),]
     
-    # Make "Toptable" with ID column
-    id.names <- rownames(analysis.results)
-    toptable = data.frame(id.names,analysis.results[,1:5])
+    # Extract Pathway ID and Names
+    m<-regmatches(rownames(analysis.results), regexpr(" ", rownames(analysis.results)), invert = TRUE)
+    pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
+    pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
+    
+    # Create top table
+    toptable = data.frame(pathway.id, pathway.name, analysis.results[,1:5])
     rownames(toptable) <- NULL
     colnames(toptable)<- NULL
     
-    # Save "Toptable"
+    # save "Toptable"
     filename <- paste(rundir, "gage_data.json", sep="")
     write(toJSON(list(tops = toptable), digits=I(4)), filename )
     
