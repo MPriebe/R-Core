@@ -95,7 +95,12 @@ argv   <- parse_args(parser)
 run.dir         <- argv$rundir
 dbrdata         <- argv$dbrdata
 analysis.list   <- unlist(strsplit(argv$analyse, ","))
-isdebug         <- argv$dev
+
+if(!is.na(argv$dev)){
+	isdebug     <- argv$dev
+} else {
+	isdebug     <- FALSE
+}
 
 # Sample Parameters
 factor.type     <- argv$factor
