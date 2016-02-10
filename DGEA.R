@@ -19,8 +19,8 @@ suppressMessages(library("GEOquery"))      # GEO dataset Retrieval
 suppressMessages(library("ggplot2"))       # Graphs designing
 suppressMessages(library("gplots"))        # Graphs designing
 suppressMessages(library("jsonlite"))      # Convert R object to JSON format
-suppressMessages(library("pheatmap"))      # Heatmap Generating
 suppressMessages(library("limma"))         # Differencial Gene Expression Analysis
+suppressMessages(library("pheatmap"))      # Heatmap Generating
 suppressMessages(library("plyr"))          # Splitting, Applying and Combining Data
 suppressMessages(library("RColorBrewer"))  # Import Colour Pallete
 suppressMessages(library("reshape2"))      # Prepare dataset for ggplot
