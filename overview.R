@@ -80,8 +80,8 @@ population1     <- unlist(strsplit(argv$popA, ","))
 population2     <- unlist(strsplit(argv$popB, ","))
 pop.name1       <- argv$popname1
 pop.name2       <- argv$popname2
-pop.colour1     <- "#b71c1c"  # Red
-pop.colour2     <- "#0d47a1"  # Blue
+pop.colour1     <- "#e199ff" # Purple   
+pop.colour2     <- "#96ca00" # Green
 
 # Clustering
 distance_options <- c("euclidean", "maximum", "manhattan", "canberra",
@@ -121,6 +121,7 @@ scalable <- function(X) {
 
 # Boxplot
 samples.boxplot <- function(data, pop.colours, pop.names, path){
+ 
   boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Groups), outlier.shape = NA) + theme(axis.text.x = element_text(angle = 70, hjust = 1), legend.position = "right")+ labs(x = "Samples", y = "Expression Levels") + scale_color_manual(name = "Groups", values = pop.colours, labels = pop.names)
   # compute lower and upper whiskers
   ylim1 = boxplot.stats(data$value)$stats[c(1, 5)]
@@ -151,6 +152,7 @@ outlier.probability <- function(X, dist.method = "euclidean", clust.method = "av
 # TODO: Add Documentation
 # Clustering dendogram
 clustering <- function(X, dist.method = "euclidean", clust.method = "average", exp){
+
   dendo  <-  hclust(dist(t(X), method = dist.method), method = clust.method)
 
   # Factor types
@@ -320,8 +322,8 @@ if (isdebug) { print("Factors and Populations have been set") }
 json.list <- list()
 
 if ("Boxplot" %in% analysis.list){
-  samples.boxplot(data, c(pop.colour1, pop.colour2),
-                  c(pop.name1, pop.name2), path = run.dir)
+  samples.boxplot(data, c(pop.colour2, pop.colour1),
+                  c(pop.name2, pop.name1), path = run.dir)
 }
 
 if ("PCA" %in% analysis.list){
