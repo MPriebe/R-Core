@@ -80,8 +80,8 @@ population1     <- unlist(strsplit(argv$popA, ","))
 population2     <- unlist(strsplit(argv$popB, ","))
 pop.name1       <- argv$popname1
 pop.name2       <- argv$popname2
-pop.colour1     <- "#b71c1c"  # Red
-pop.colour2     <- "#0d47a1"  # Blue
+pop.colour1     <- "#e199ff" # Purple   
+pop.colour2     <- "#96ca00" # Green
 
 # Clustering
 distance_options <- c("euclidean", "maximum", "manhattan", "canberra",
@@ -121,6 +121,7 @@ scalable <- function(X) {
 
 # Boxplot
 samples.boxplot <- function(data, pop.colours, pop.names, path){
+ 
   boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Groups), outlier.shape = NA) + theme(axis.text.x = element_text(angle = 70, hjust = 1), legend.position = "right")+ labs(x = "Samples", y = "Expression Levels") + scale_color_manual(name = "Groups", values = pop.colours, labels = pop.names)
   # compute lower and upper whiskers
   ylim1 = boxplot.stats(data$value)$stats[c(1, 5)]
@@ -151,27 +152,41 @@ outlier.probability <- function(X, dist.method = "euclidean", clust.method = "av
 # TODO: Add Documentation
 # Clustering dendogram
 clustering <- function(X, dist.method = "euclidean", clust.method = "average", exp){
+
   dendo  <-  hclust(dist(t(X), method = dist.method), method = clust.method)
 
   # Factor types
-  factor <- as.factor(exp[,"factor.type"])
+  sample.factor <- as.factor(exp[,"factor.type"])
   population <- as.factor(exp[,"population.colour"])
 
-  names(factor) <- exp$Sample
+  names(sample.factor) <- exp$Sample
   names(population ) <- exp$Sample
 
+  # Calculater outliers / dissimilarity
   outliers <- outlier.probability(X, dist.method, clust.method)
 
-  factor.cmap <- makecmap(as.numeric(factor), n = length(levels(factor)), colFn = colorRampPalette(c('black', 'green')))
-  population.cmap <- makecmap(as.numeric(factor), n = length(levels(population)), colFn = colorRampPalette(c('black', 'blue')))
-  outliers.cmap <- makecmap(outliers, n = 10, colFn = colorRampPalette(c('black', 'red')))
+  # Prapare colour bars for dendogram. makecmap function does not support for factor types.
+  # Therefore after this step, lot of customizations were done to forcibly enter factors
+  factor.cmap <- makecmap(as.numeric(sample.factor), n = length(levels(sample.factor)), colFn = colorRampPalette(c('black', 'green')))
+  population.cmap <- makecmap(as.numeric(population), n = length(levels(population)), colFn = colorRampPalette(c('#e199ff', '#96ca00')))
+  outliers.cmap <- makecmap(outliers, n = 10, colFn = colorRampPalette(c('white', '#26c6da')))
 
-  matrix <- data.frame(Factor =  factor, Groups = population,
+  matrix <- data.frame(Factor =  sample.factor, 
+                       Groups = population,
                        Dissimilarity = cmap( outliers, outliers.cmap))
 
-  jColors <- with(matrix, data.frame(factors = levels(Factor),
-                                     color = I(brewer.pal(nlevels(Factor), name = 'Dark2'))))
+  # Decide colours for factor based on No of factors
+  # Because brewer.pal supports minimum level = 3
+  if(nlevels(sample.factor)< 3){ 
+      cl <- c("#40c4ff","#64ffda")
+  }else{
+      cl <- I(brewer.pal(nlevels(sample.factor), name = 'Dark2'))
+  }
 
+  # Colour matrix
+  jColors <- with(matrix, data.frame(f = levels(sample.factor),color = cl))
+  
+  # Assign colour to Factor column
   matrix <- within(matrix,{
     Factor = jColors$color[matrix$Factor]
   })
@@ -179,21 +194,27 @@ clustering <- function(X, dist.method = "euclidean", clust.method = "average", e
   filename <- paste(run.dir, "clustering.png", sep = "")
   CairoPNG(file = filename, width = 1200, height = 700, xlab = "Samples")
 
-  factor.cmap$colors         <- jColors$color
-  factor.cmap$breaks         <- jColors$factors
+  # Customized colours add to cmap object
+  factor.cmap$colors         <- levels(jColors$color)
+  factor.cmap$breaks         <- c(as.character(jColors$f)," ")
   factor.cmap$include.lowest <- TRUE
-
-  population.cmap$colors         <- levels(population)
-  population.cmap$breaks         <- c("Group1","Group2","")
+  
+  # Customized colours add to cmap object
+  population.cmap$colors         <- c("#96ca00","#e199ff")
+  population.cmap$breaks         <- c("Group2","Group1","")
   population.cmap$include.lowest <- TRUE
 
+  # Factor name capitalize and assign column names
+  factorname <- paste(toupper(substr(factor.type, 1, 1)), substr(factor.type, 2, nchar(factor.type)), sep="")
+  colnames(matrix) <- c(factorname,"Groups","Dissimilarity")
+  
   par(mar = c(6.5,6,4,3)+0.1)  # make space for color keys
   dendromat(dendo, matrix, height = 0.3, ylab = 'Distance')
 
-  vkey(factor.cmap, 'Factors', y = 0.9, stretch = 3 )
-  vkey(population.cmap, 'Groups', y = 0.6, stretch = 3)
+  vkey(factor.cmap, factorname, y = 0.8, stretch = 3 )
+  vkey(population.cmap, 'Groups', y = 0.5, stretch = 3)
   vkey(outliers.cmap, 'Dissimilarity', y = 0.0, stretch =2)
-
+  
   dev.off()
 
   if (isdebug) {
@@ -320,8 +341,8 @@ if (isdebug) { print("Factors and Populations have been set") }
 json.list <- list()
 
 if ("Boxplot" %in% analysis.list){
-  samples.boxplot(data, c(pop.colour1, pop.colour2),
-                  c(pop.name1, pop.name2), path = run.dir)
+  samples.boxplot(data, c(pop.colour2, pop.colour1),
+                  c(pop.name2, pop.name1), path = run.dir)
 }
 
 if ("PCA" %in% analysis.list){
