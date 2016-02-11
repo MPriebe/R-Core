@@ -61,10 +61,10 @@ parser <- add_argument(parser, "--factor",
 
 # Sample Parameters
 parser <- add_argument(parser, "--comparisontype", help = "ExpVsCtrl or ExpVsExp")
-parser <- add_argument(parser, "--genesettype",help = "KEGG or GO")
+parser <- add_argument(parser, "--genesettype", help = "KEGG or GO")
 parser <- add_argument(parser, "--geotype",
-                       help = "BP - Biological Process or 
-                               MF - molecular function 
+                       help = "BP - Biological Process or
+                               MF - molecular function
                                or CC - Cellular Component")
 
 # allows arguments to be run via the command line
@@ -212,14 +212,14 @@ if(isdebug){
 #                          Gage  Data Loading                               #
 #############################################################################
 
-if ('KEGG' == 'KEGG') {
+if (geneset.type == 'KEGG') {
   # Loading kegg sets
   data(kegg.gs)
   kg.hsa  = kegg.gsets(organism)                       #this picks out the human sets
   kegg.gs = kg.hsa$kg.sets[kg.hsa$sigmet.idx]         # no idea but doesn't seem to work without this step
   # filename <- paste(rundir, "kegg.hsa.sigmet.gsets.RData", sep="")
   # save(kegg.gs, file = filename) #saves the human sets as an R object
-} else if ('GO' == 'GO') {
+} else if (geneset.type == 'GO') {
   # Loading GO sets
   go.hs = go.gsets(species="human")       # use species column of bods2
   go.bp = go.hs$go.sets[go.hs$go.subs$BP] # BP = Biological Process
@@ -227,7 +227,7 @@ if ('KEGG' == 'KEGG') {
   go.cc = go.hs$go.sets[go.hs$go.subs$CC] # CC = cellular component
   # filename <- paste(rundir, "go.hs.gsets.RData", sep="")
   # save(go.bp, go.mf, go.cc, file = filename)
-}  
+}
 
 if(isdebug){
 	print("Gage Data Preparation completed!")
@@ -238,13 +238,13 @@ if(isdebug){
 #############################################################################
 
 get.heatmap <- function(analysis.stats, heatmap.name){
-    
+
     analysis.heatmap<-t(analysis.stats)
     analysis.heatmap<-analysis.heatmap
     row.names(analysis.heatmap)<-gsub("(stats.)", "", row.names(analysis.heatmap))
     col.pal <- colorRampPalette(rev(
         RColorBrewer::brewer.pal(11, "RdYlGn")))(100)
-    
+
     filename <- paste(rundir, heatmap.name, sep="")
 
     if(isdebug ){
@@ -281,6 +281,12 @@ kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2
     # Formatting and preparation for heatmap
     analysis.sig<-as.data.frame(analysis.sig)
     analysis.stats<-analysis.sig[,grep("^stats.GSM", names(analysis.sig), value=TRUE)]
+  
+    # Get only Pathway IDs
+    m<-regmatches(rownames(analysis.sig), regexpr(" ", rownames(analysis.sig)), invert = TRUE)
+    pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
+    pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
+    rownames(analysis.stats) <- pathway.id 
     
     ##Interaction networks
     
@@ -320,9 +326,19 @@ kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2
     # Remove gene sets without zero enrichments
     analysis.results<-analysis.results[complete.cases(analysis.results),]
     
+    # Extract Pathway ID and Names
+    m<-regmatches(rownames(analysis.results), regexpr(" ", rownames(analysis.results)), invert = TRUE)
+    pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
+    pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
+    
+    # Create top table
+    toptable = data.frame(pathway.id, pathway.name, analysis.results[,1:5])
+    rownames(toptable) <- NULL
+    colnames(toptable)<- NULL
+    
     # save "Toptable"
-    filename <- paste(rundir, "gage_data.json", sep = "")
-    write(toJSON(analysis.results, digits=I(4)), filename )
+    filename <- paste(rundir, "gage_data.json", sep="")
+    write(toJSON(list(tops = toptable), digits=I(4)), filename )
     
     # Creating a heatmap
     get.heatmap(analysis.stats, "gage_heatmap.svg")
@@ -334,7 +350,7 @@ kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2
 
 #arguments: go.cc, go.mf, go.bp
 
-go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.group, compare.option = "paired" ){
+go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.group, compare.option = "unpaired" ){
   
         analysis <- gage(GEOdataset, gsets = set.type, 
                                     ref = ref.group, samp = samp.group, 
@@ -346,6 +362,12 @@ go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.
     # Formatting and preparation for heatmap
     analysis.sig <- as.data.frame(analysis.sig)
     analysis.stats<-analysis.sig[,grep("^stats.GSM", names(analysis.sig), value=TRUE)]
+
+    # Get only Pathway IDs
+    m<-regmatches(rownames(analysis.sig), regexpr(" ", rownames(analysis.sig)), invert = TRUE)
+    pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
+    pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
+    rownames(analysis.stats) <- pathway.id 
     
     # Results table
     analysis.results<-analysis$greater
@@ -353,9 +375,19 @@ go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.
     # Remove gene sets without zero enrichments
     analysis.results<-analysis.results[complete.cases(analysis.results),]
     
+    # Extract Pathway ID and Names
+    m<-regmatches(rownames(analysis.results), regexpr(" ", rownames(analysis.results)), invert = TRUE)
+    pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
+    pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
+    
+    # Create top table
+    toptable = data.frame(pathway.id, pathway.name, analysis.results[,1:5])
+    rownames(toptable) <- NULL
+    colnames(toptable)<- NULL
+    
     # save "Toptable"
-    filename <- paste(rundir, "gage_data.json", sep = "")
-    write(toJSON(analysis.results, digits=I(4)), "filename" )
+    filename <- paste(rundir, "gage_data.json", sep="")
+    write(toJSON(list(tops = toptable), digits=I(4)), filename )
     
     # Creating a heatmap
     get.heatmap(analysis.stats, "gage_heatmap.svg")
